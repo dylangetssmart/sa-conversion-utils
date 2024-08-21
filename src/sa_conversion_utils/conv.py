@@ -2,15 +2,14 @@
 import os
 import argparse
 import re
-# import importlib.resources
 from importlib.resources import files
 from dotenv import load_dotenv
 
-# Lib
-from smart_conversion.lib.exec_conv import exec_conv
-from smart_conversion.lib.sql_runner import sql_runner
-from smart_conversion.lib.mapping import generate_mapping
-from smart_conversion.lib.db_utils import restore_db, backup_db, create_db
+# Import modules
+from .database.sql_runner import sql_runner
+from .database.db_utils import restore_db, backup_db, create_db
+from .conversion.exec_conv import exec_conv
+from .conversion.mapping import generate_mapping
 
 # Load environment variables
 load_dotenv()
