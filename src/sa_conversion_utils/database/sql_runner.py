@@ -1,7 +1,7 @@
 import subprocess
 import os
 from datetime import datetime
-from .logger import log_message
+from ..utils.logger import log_message
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(BASE_DIR, '../logs')

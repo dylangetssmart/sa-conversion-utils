@@ -1,7 +1,7 @@
 import os
 import re
-from .db_utils import backup_db
-from .sql_runner import sql_runner
+from ..database.db_utils import backup_db
+from ..database.sql_runner import sql_runner
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 
