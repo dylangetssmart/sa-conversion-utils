@@ -51,6 +51,11 @@ def restore_db(options):
     database = options.get('database')
     virgin = options.get('virgin', False)
 
+    if virgin:
+        console.print(f"[yellow]Restoring {server}.{database} to virgin state")
+    else:
+        console.print(f"[yellow]Restoring {server}.{database}...")
+
     if not server:
         print("Missing server parameter.")
         return
@@ -63,7 +68,7 @@ def restore_db(options):
         backup_file = r"C:\LocalConv\_virgin\SADatabase\SADatabase\SAModel_backup_2024_07_25_010001_5737827.bak"
     else:
         # Prompt user to select .bak backup_file using backup_file dialog
-        print("Select the .bak backup_file to restore:")
+        console.print("[yellow]Select the .bak backup_file to restore:")
         backup_file = select_bak_backup_file()
 
         if not backup_file:

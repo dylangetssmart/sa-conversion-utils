@@ -1,19 +1,27 @@
 import os
 import re
+from dotenv import load_dotenv
 from ..database.db_utils import backup_db
 from ..database.sql_runner import sql_runner
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SQL_SCRIPTS_DIR = os.path.join(BASE_DIR, '../sql/shiner/')
+BASE_DIR = os.getcwd()
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+SQL_SCRIPTS_DIR = os.getenv('SQL_SCRIPTS_DIR')
+WORKING_DIR = os.path.join(os.getcwd(),SQL_SCRIPTS_DIR)
+# BASE_DIR = os.path.dirname(os.getcwd())
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# SQL_SCRIPTS_DIR = os.path.join(BASE_DIR, '../sql/shiner/')
+
+console = Console()
+
 # Possible options are 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 # https://docs.python.org/3/library/stdtypes.html#typesseq-range
 sequence_patterns = {
     i: re.compile(rf'^{i}.*\.sql$', re.I) for i in range(10)
 }
 
-console = Console()
 
 def exec_conv(options):
     server = options.get('server')
@@ -35,7 +43,7 @@ def exec_conv(options):
             return
 
     try:
-        all_files = os.listdir(SQL_SCRIPTS_DIR)
+        all_files = os.listdir(WORKING_DIR)
         # files = [file for file in all_files if selected_pattern.match(file)]
 
         if sequence == 'all':
@@ -65,7 +73,7 @@ def exec_conv(options):
                     # progress.console.log(f"Processing file: {file}")
                     script_task = progress.add_task(f"[yellow]Running {file}")
                     sql_runner(
-                        os.path.join(SQL_SCRIPTS_DIR, file),
+                        os.path.join(WORKING_DIR, file),
                         server,
                         database,
                         script_task,
@@ -74,12 +82,12 @@ def exec_conv(options):
                     progress.update(task, advance=1)
                     # console.print(f'Executed {file}', style="green")
     except Exception as e:
-        console.print(f'Error reading directory {SQL_SCRIPTS_DIR}\n{str(e)}', style="bold red")
+        console.print(f'Error reading directory {WORKING_DIR}\n{str(e)}', style="bold red")
 
     if backup:    
         backup_db({
             'database': database,
-            'directory': os.path.join(BASE_DIR, '../backups'),
+            'directory': os.path.join(BASE_DIR, 'backups'),
             'sequence': sequence,
             'server': server
         })

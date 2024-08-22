@@ -11,21 +11,26 @@ from .database.db_utils import restore_db, backup_db, create_db
 from .conversion.exec_conv import exec_conv
 from .conversion.mapping import generate_mapping
 
+# Constants
+BASE_DIR = os.path.dirname(__file__)
+
+# Load environment variables from the current working directory
+load_dotenv(os.path.join(os.getcwd(), '.env'))
+
+# Debugging: Print environment variables to check if they're loaded
+# for key, value in os.environ.items():
+#     if key in ['SERVER', 'SOURCE_DB', 'TARGET_DB']:
+#         print(f'{key}: {value}')
+
 # Load environment variables
-load_dotenv()
 SERVER = os.getenv('SERVER')
 SOURCE_DB = os.getenv('SOURCE_DB')
 SA_DB = os.getenv('TARGET_DB')
 
-# Constants
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# https://jwodder.github.io/kbits/posts/pypkg-data/
-
 def read(args):
-    print('read')
-    pkg = files('smart_conversion')
-    pkg_data_file = pkg / ''
+    print(SERVER, SOURCE_DB, SA_DB)
+    # pkg = files('smart_conversion')
+    # pkg_data_file = pkg / ''
     # print(files('sql.conv'))
     # with importlib.resources.files(__package__).joinpath('sql/conv') as sql_dir:
     #     for file in os.listdir(sql_dir):
@@ -66,7 +71,7 @@ def restore(args):
     }
     restore_db(options)
 
-def init(args):
+# def init(args):
     # options = {
     #     'server': args.srv or SERVER,
     #     'database': args.db or SA_DB,
@@ -74,27 +79,27 @@ def init(args):
     # }
 
     # initialize(options)
-    server = args.srv or SERVER
-    database = args.db or SOURCE_DB
-    init_dir = os.path.join(BASE_DIR, 'sql-scripts', 'initialize-needles')
-    sql_pattern = re.compile(r'^.*\.sql$', re.I)
+    # server = args.srv or SERVER
+    # database = args.db or SOURCE_DB
+    # init_dir = os.path.join(BASE_DIR, 'sql-scripts', 'initialize-needles')
+    # sql_pattern = re.compile(r'^.*\.sql$', re.I)
 
-    print(f'Initializing Needles database {server}.{database}...')
-    try:
-        # List all files in the initialization directory
-        all_files = os.listdir(init_dir)
-        # Filter files that match the SQL pattern
-        files = [file for file in all_files if sql_pattern.match(file)]
+    # print(f'Initializing Needles database {server}.{database}...')
+    # try:
+    #     # List all files in the initialization directory
+    #     all_files = os.listdir(init_dir)
+    #     # Filter files that match the SQL pattern
+    #     files = [file for file in all_files if sql_pattern.match(file)]
 
-        if not files:
-            print(f'No scripts found in {init_dir}.')
-        else:
-            for file in files:
-                sql_file_path = os.path.join(init_dir, file)
-                # print(f'Executing script: {sql_file_path}')
-                sql_runner(sql_file_path, server, database)
-    except Exception as e:
-        print(f'Error reading directory {init_dir}\n{str(e)}')
+    #     if not files:
+    #         print(f'No scripts found in {init_dir}.')
+    #     else:
+    #         for file in files:
+    #             sql_file_path = os.path.join(init_dir, file)
+    #             # print(f'Executing script: {sql_file_path}')
+    #             sql_runner(sql_file_path, server, database)
+    # except Exception as e:
+    #     print(f'Error reading directory {init_dir}\n{str(e)}')
 
 def create(args):
     options = {
@@ -137,10 +142,10 @@ def main():
     restore_db_parser.set_defaults(func=restore)
 
     # Initiliaze Needles DB
-    initialize_needles_parser = subparsers.add_parser('init', help='Initialize Needles database with functions and indexes.')
-    initialize_needles_parser.add_argument('-srv', help='Server name.', metavar='')
-    initialize_needles_parser.add_argument('-db', help='Needles database to initialize.', metavar='')
-    initialize_needles_parser.set_defaults(func=init)
+    # initialize_needles_parser = subparsers.add_parser('init', help='Initialize Needles database with functions and indexes.')
+    # initialize_needles_parser.add_argument('-srv', help='Server name.', metavar='')
+    # initialize_needles_parser.add_argument('-db', help='Needles database to initialize.', metavar='')
+    # initialize_needles_parser.set_defaults(func=init)
 
     # Generate Mapping Template
     mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
