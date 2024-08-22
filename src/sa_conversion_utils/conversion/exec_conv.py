@@ -3,6 +3,7 @@ import re
 from dotenv import load_dotenv
 from ..database.db_utils import backup_db
 from ..database.sql_runner import sql_runner
+from ..utils.confirm import confirm_execution
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 
@@ -56,7 +57,12 @@ def exec_conv(options):
 
         if not files:
             console.print(f'No scripts found for pattern: {selected_pattern}', style="bold yellow")
+            return
         else:
+            custom_message = f"execute SQL sequence {sequence}"
+            if not confirm_execution(server, database, custom_message):
+                return
+        
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),

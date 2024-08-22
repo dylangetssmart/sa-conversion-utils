@@ -110,7 +110,7 @@ def create(args):
 
 def main():
     # Main entry point for the CLI.
-    parser = argparse.ArgumentParser(description='Needles Conversion CLI.')
+    parser = argparse.ArgumentParser(description='SmartAdvocate Conversion CLI.')
     subparsers = parser.add_subparsers(
         title="conversion operations",
         # help='sub-command help'

@@ -3,8 +3,10 @@ import os
 from datetime import datetime
 from ..utils.logger import log_message
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOGS_DIR = os.path.join(BASE_DIR, '../logs')
+BASE_DIR = os.getcwd()
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+# LOGS_DIR = os.path.join(BASE_DIR, '../logs')
 datetime_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
 LOG_FILE = os.path.join(LOGS_DIR, f'error_log_{datetime_str}.txt')
 
