@@ -48,7 +48,7 @@ def backup_db(options):
 
 def restore_db(options):
     server = options.get('server')
-    database = options.get('database')
+    database = options.get('name')
     virgin = options.get('virgin', False)
 
     if virgin:
