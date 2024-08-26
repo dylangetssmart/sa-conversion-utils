@@ -49,7 +49,7 @@ def exec_conv(options):
 
         if sequence == 'all':
             # Execute all SQL scripts in the directory
-            files = [file for file in all_files if file.endswith('.sql')]
+            files = [file for file in all_files if file.lower().endswith('.sql')]
         else:
             # Filter files based on sequence pattern
             selected_pattern = sequence_patterns[sequence]
