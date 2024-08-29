@@ -9,8 +9,8 @@ from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, T
 
 BASE_DIR = os.getcwd()
 load_dotenv(os.path.join(BASE_DIR, '.env'))
-SQL_SCRIPTS_DIR = os.getenv('SQL_SCRIPTS_DIR')
-WORKING_DIR = os.path.join(os.getcwd(),SQL_SCRIPTS_DIR)
+SQL_DIR = os.getenv('SQL_DIR')
+WORKING_DIR = os.path.join(BASE_DIR, SQL_DIR)
 # BASE_DIR = os.path.dirname(os.getcwd())
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # SQL_SCRIPTS_DIR = os.path.join(BASE_DIR, '../sql/shiner/')
