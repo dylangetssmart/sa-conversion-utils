@@ -1,14 +1,36 @@
 import pandas as pd
 from sqlalchemy import create_engine
 import os
-
+import re
+from dotenv import load_dotenv
 # Variables for database connection
 # db_server = "DYLANS"
 # db_name = "NeedlesSLF"
 
 # Directory containing SQL files and output directory
-sql_dir = '../sql-scripts/mapping'
-output_dir = '../sql-scripts/mapping'
+# sql_dir = '../sql/mapping'
+# output_dir = '../sql/mapping'
+
+# Load environment variables
+load_dotenv()
+# SERVER = os.getenv('SERVER')
+# LITIFY_DB = os.getenv('SOURCE_DB') # Import data to the source_db
+SQL_DIR = os.getenv('SQL_DIR')
+# WORKING_DIR = os.path.join(os.getcwd(),SQL_SCRIPTS_DIR)
+
+# Get the current working directory
+base_dir = os.getcwd()
+
+mapping_dir = os.path.join(os.getcwd(),SQL_DIR,'mapping')
+
+def clean_string(value):
+    if isinstance(value, str):
+        # Remove any non-printable or control characters
+        return re.sub(r'[\x00-\x1F\x7F-\x9F]', '', value)
+    return value
+
+def sanitize_dataframe(df):
+    return df.map(clean_string)
 
 def execute_query(query, engine, additional_columns=None):
     # Executes a SQL query and returns the result as a DataFrame with additional columns.
@@ -32,26 +54,31 @@ def save_to_excel(dataframes, output_path):
     if not dataframes:
         print("No data to save.")
         return
+    
+    print(f"Attempting to save Excel file to: {output_path}")
 
     # Save DataFrames to Excel
-    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
-        for sheet_name, df in dataframes.items():
-            df.to_excel(writer, sheet_name=sheet_name, index=False)
+    try:
+        with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+            for sheet_name, df in dataframes.items():
+                # df.to_excel(writer, sheet_name=sheet_name, index=False)
+                # Sanitize DataFrame before saving
+                sanitized_df = sanitize_dataframe(df)
+                sanitized_df.to_excel(writer, sheet_name=sheet_name, index=False)
+        print(f"Excel file saved successfully to: {output_path}")
+    except PermissionError as e:
+        print(f"Permission denied: {e}")
+    except Exception as e:
+        print(f"An error occurred while saving the Excel file: {e}")
+
 
 def generate_mapping(options):
     server = options.get('server')
     database = options.get('database')
     conn_str = f"mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
 
-    # Get the current working directory
-    base_dir = os.path.dirname(__file__)
     
-    # Construct full paths using relative paths
-    full_sql_dir = os.path.abspath(os.path.join(base_dir, sql_dir))
-    # full_output_dir = os.path.abspath(os.path.join(base_dir, output_dir))
     
-    # Ensure output directory exists
-    # os.makedirs(full_output_dir, exist_ok=True)
     
     # Create SQLAlchemy engine
     engine = create_engine(conn_str)
@@ -75,10 +102,10 @@ def generate_mapping(options):
         "SA Party": None
     }
     
-    # Iterate over SQL files
-    for filename in os.listdir(full_sql_dir):
+    # Iterate over SQL files in full_sql_dir
+    for filename in os.listdir(mapping_dir):
         if filename.endswith('.sql'):
-            full_file_path = os.path.join(full_sql_dir, filename)
+            full_file_path = os.path.join(mapping_dir, filename)
             sheet_name = os.path.splitext(filename)[0]  # Use filename without extension as sheet name
             try:
                 with open(full_file_path, 'r') as file:
@@ -101,12 +128,13 @@ def generate_mapping(options):
     for name in dataframes:
         print(f"DataFrame '{name}' shape: {dataframes[name].shape}")
     
-    parent_dir_name = os.path.basename(os.path.abspath(os.path.join(base_dir, os.pardir)))
+    parent_dir_name = os.path.basename(os.path.abspath(base_dir))
+    # parent_dir_name = os.path.basename(os.path.abspath(os.path.join(base_dir, os.pardir)))
 
     # Save all DataFrames to a single Excel file
     output_filename = f'{parent_dir_name} Mapping Template.xlsx'
     output_path = os.path.join(base_dir, output_filename)
-    save_to_excel(dataframes, base_dir)
+    save_to_excel(dataframes, output_path)
     
     print(f'Saved results to {output_path}')
 

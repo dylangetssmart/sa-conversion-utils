@@ -28,7 +28,9 @@ setup(
         "pandas",
         "sqlalchemy",
         "rich",
-        "python-dotenv"
+        "python-dotenv",
+        "pyodbc",
+        "openpyxl"
         # "tkinter"
     ],
     extras_require={

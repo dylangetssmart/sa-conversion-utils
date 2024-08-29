@@ -10,6 +10,7 @@ from .database.sql_runner import sql_runner
 from .database.db_utils import restore_db, backup_db, create_db
 from .conversion.exec_conv import exec_conv
 from .conversion.mapping import generate_mapping
+from .conversion.initialize import initialize
 
 # Constants
 BASE_DIR = os.path.dirname(__file__)
@@ -39,23 +40,23 @@ def read(args):
 
 def map(args):
     options = {
-        'server': args.srv or SERVER,
-        'database': args.db or SA_DB
+        'server': args.server or SERVER,
+        'database': args.db or SOURCE_DB
     }
     generate_mapping(options)
 
 def backup(args):
     options = {
-        'server': args.srv or SERVER,
+        'server': args.server or SERVER,
         'database': args.db or SA_DB,
         'directory': args.dir or os.path.join(os.getcwd(),'backups'),
-        'sequence': args.seq
+        'message': args.m
     }
     backup_db(options)
 
 def exec(args):
     options = {
-        'server': args.srv or SERVER,
+        'server': args.server or SERVER,
         'database': args.db or SA_DB,
         'sequence': args.seq,
         'backup': args.bu,
@@ -72,34 +73,12 @@ def restore(args):
     restore_db(options)
 
 # def init(args):
-    # options = {
-    #     'server': args.srv or SERVER,
-    #     'database': args.db or SA_DB,
-    #     'system': args.system
-    # }
-
-    # initialize(options)
-    # server = args.srv or SERVER
-    # database = args.db or SOURCE_DB
-    # init_dir = os.path.join(BASE_DIR, 'sql-scripts', 'initialize-needles')
-    # sql_pattern = re.compile(r'^.*\.sql$', re.I)
-
-    # print(f'Initializing Needles database {server}.{database}...')
-    # try:
-    #     # List all files in the initialization directory
-    #     all_files = os.listdir(init_dir)
-    #     # Filter files that match the SQL pattern
-    #     files = [file for file in all_files if sql_pattern.match(file)]
-
-    #     if not files:
-    #         print(f'No scripts found in {init_dir}.')
-    #     else:
-    #         for file in files:
-    #             sql_file_path = os.path.join(init_dir, file)
-    #             # print(f'Executing script: {sql_file_path}')
-    #             sql_runner(sql_file_path, server, database)
-    # except Exception as e:
-    #     print(f'Error reading directory {init_dir}\n{str(e)}')
+#     options = {
+#         'server': args.srv or SERVER,
+#         'database': args.db or SA_DB,
+#         'system': args.system
+#     }
+#     initialize(options)
 
 def create(args):
     options = {
@@ -107,6 +86,19 @@ def create(args):
         'name': args.name
     }
     create_db(options)
+
+def encrypt_ssn(args):
+    exe_path = r"C:\LocalConv\_utils\SSNEncryption\SSNEncryption.exe"
+    try:
+        # Execute the SSNEncryption.exe
+        result = os.system(exe_path)
+        
+        if result == 0:
+            print("SSN encryption completed successfully.")
+        else:
+            print(f"SSN encryption failed with exit code {result}.")
+    except Exception as e:
+        print(f"An error occurred while running SSN encryption: {str(e)}")
 
 def main():
     # Main entry point for the CLI.
@@ -118,10 +110,10 @@ def main():
 
     # Backup DB
     backup_parser = subparsers.add_parser('backup', help='Create database backups.')
-    backup_parser.add_argument('seq', help='Sequence to stamp on .bak file.')
-    backup_parser.add_argument('-dir', help='Backup directory.', metavar='')
-    backup_parser.add_argument('-srv', help='Server name.', metavar='')
-    backup_parser.add_argument('-db', help='Database to backup.', metavar='')
+    backup_parser.add_argument('-m', '--message', help='Message to stamp on the .bak file.')
+    backup_parser.add_argument('-dir', help='Directory to save the backup in. If not supplied, defaults to /backups.', metavar='')
+    backup_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
+    backup_parser.add_argument('-db', help='Name of database to backup. If not supplied, defaults to SA_DB from .env.', metavar='')
     backup_parser.set_defaults(func=backup)
 
     # Execute conversion
@@ -129,8 +121,8 @@ def main():
     exec_parser.add_argument('seq', nargs='?',help='SQL Script sequence to execute.', choices=range(0,10), type=int)
     # exec_parser.add_argument('seq', help='Script sequence to execute.', choices=['0','1','2','3','4','5','a','p','q'])
     exec_parser.add_argument('-bu', action='store_true', help='Backup SA database after script execution.')
-    exec_parser.add_argument('-srv', help='Server name.', metavar='')
-    exec_parser.add_argument('-db', help='Database to execute against.', metavar='')
+    exec_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
+    exec_parser.add_argument('-db', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     exec_parser.add_argument('-a', '--all', action='store_true', help='Execute all sql scripts.')
     exec_parser.set_defaults(func=exec)
 
@@ -142,13 +134,15 @@ def main():
     restore_db_parser.set_defaults(func=restore)
 
     # Initiliaze Needles DB
-    # initialize_needles_parser = subparsers.add_parser('init', help='Initialize Needles database with functions and indexes.')
-    # initialize_needles_parser.add_argument('-srv', help='Server name.', metavar='')
-    # initialize_needles_parser.add_argument('-db', help='Needles database to initialize.', metavar='')
-    # initialize_needles_parser.set_defaults(func=init)
+    # init_parser = subparsers.add_parser('init', help='Initialize Needles database with functions and indexes.')
+    # init_parser.add_argument('-srv', help='Server name.', metavar='')
+    # init_parser.add_argument('-db', help='Needles database to initialize.', metavar='')
+    # init_parser.set_defaults(func=init)
 
     # Generate Mapping Template
     mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
+    mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
+    mapping_parser.add_argument('-db', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     mapping_parser.set_defaults(func=map)
 
     # Create DB
@@ -160,6 +154,10 @@ def main():
     # Read 
     read_parser = subparsers.add_parser('read', help='read sql scripts for testing.')
     read_parser.set_defaults(func=read)
+
+    # Add a subparser for SSN Encryption
+    ssn_encrypt_parser = subparsers.add_parser('encrypt_ssn', help='Run SSN Encryption utility.')
+    ssn_encrypt_parser.set_defaults(func=encrypt_ssn)
 
     args = parser.parse_args()
 
