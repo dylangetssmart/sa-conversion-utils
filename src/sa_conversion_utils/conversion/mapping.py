@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 import os
 import re
 from dotenv import load_dotenv
+from ..utils.confirm import confirm_execution
 # Variables for database connection
 # db_server = "DYLANS"
 # db_name = "NeedlesSLF"
@@ -16,6 +17,7 @@ load_dotenv()
 # SERVER = os.getenv('SERVER')
 # LITIFY_DB = os.getenv('SOURCE_DB') # Import data to the source_db
 SQL_DIR = os.getenv('SQL_DIR')
+
 # WORKING_DIR = os.path.join(os.getcwd(),SQL_SCRIPTS_DIR)
 
 # Get the current working directory
@@ -75,11 +77,19 @@ def save_to_excel(dataframes, output_path):
 def generate_mapping(options):
     server = options.get('server')
     database = options.get('database')
-    conn_str = f"mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
+    # conn_str = f"mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
+    conn_str = f"mssql+pyodbc://sa:SAsuper@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
 
+    """
+    add an argument to use windows auth or accept a password (from .env)
     
-    
-    
+    """
+
+
+    custom_message = f"generate mapping template"
+    if not confirm_execution(server, database, custom_message):
+        return
+
     # Create SQLAlchemy engine
     engine = create_engine(conn_str)
     
@@ -111,7 +121,7 @@ def generate_mapping(options):
                 with open(full_file_path, 'r') as file:
                     query = file.read().strip()
                     # Choose additional columns based on file or content type
-                    if 'party_roles' in filename.lower():
+                    if 'party_role' in filename.lower():
                         df = execute_query(query, engine, additional_columns=party_role_columns)
                     else:
                         df = execute_query(query, engine, additional_columns=general_columns)
