@@ -50,7 +50,7 @@ def backup(args):
         'server': args.server or SERVER,
         'database': args.db or SA_DB,
         'directory': args.dir or os.path.join(os.getcwd(),'backups'),
-        'message': args.m
+        'message': args.message
     }
     backup_db(options)
 

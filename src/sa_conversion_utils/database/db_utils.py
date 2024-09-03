@@ -5,6 +5,7 @@ import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog
 from rich.console import Console
+from ..utils.confirm import confirm_execution
 
 console = Console()
 
@@ -32,7 +33,13 @@ def backup_db(options):
         raise ValueError("Server environment variable is not set.")
 
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
-    backup_path1 = os.path.join(directory, f'{database}-{message}_{timestamp}.bak')
+    # backup_path1 = os.path.join(directory, f'{database}-{message}_{timestamp}.bak')
+
+    filename = f'{database}-{message}_{timestamp}.bak'
+    if sequence:
+        filename = f'{database}-{message}_-afterSeq{sequence}_{timestamp}.bak'
+
+    backup_path1 = os.path.join(directory, filename)
     # backup_path1 = os.path.join(directory, f'{database}-aftersequence-{sequence}_{timestamp}.bak')
     # backup_path2 = os.path.join(directory, f'{database_name2}-after-{sequence}_{timestamp}.bak')
 
@@ -52,6 +59,10 @@ def restore_db(options):
     server = options.get('server')
     database = options.get('name')
     virgin = options.get('virgin', False)
+
+    custom_message = f"restore database"
+    if not confirm_execution(server, database, custom_message):
+        return
 
     if virgin:
         console.print(f"[yellow]Restoring {server}.{database} to virgin state")

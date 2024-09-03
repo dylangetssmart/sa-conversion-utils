@@ -95,5 +95,6 @@ def exec_conv(options):
             'database': database,
             'directory': os.path.join(BASE_DIR, 'backups'),
             'sequence': sequence,
-            'server': server
+            'server': server,
+            'message': 'AutoBackupFromExecute'
         })
