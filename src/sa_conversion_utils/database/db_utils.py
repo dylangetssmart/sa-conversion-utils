@@ -5,6 +5,7 @@ import tkinter as tk
 from datetime import datetime
 from tkinter import filedialog
 from rich.console import Console
+from rich.prompt import Confirm
 from ..utils.confirm import confirm_execution
 
 console = Console()
@@ -12,6 +13,7 @@ console = Console()
 def select_bak_backup_file():
     root = tk.Tk()
     root.withdraw()
+    root.wm_attributes('-topmost', 1)
     initial_dir = os.path.join(os.getcwd(), 'backups')
     backup_file = filedialog.askopenfile(
         title="Select the .bak backup_file to restore",
@@ -57,13 +59,20 @@ def backup_db(options):
 
 def restore_db(options):
     server = options.get('server')
-    database = options.get('name')
+    database = options.get('database')
     virgin = options.get('virgin', False)
 
-    custom_message = f"restore database"
-    if not confirm_execution(server, database, custom_message):
-        return
+    # custom_message = f"restore database"
+    # if not confirm_execution(server, database, custom_message):
+    #     return
 
+    # Dynamic confirmation prompt
+    prompt_message = f"Are you sure you want to restore [magenta]{server}[/magenta].[cyan]{database}[/cyan]"
+    if virgin:
+        prompt_message += f" to a virgin state"
+    if not Confirm.ask(prompt_message):
+        return
+    
     if virgin:
         console.print(f"[yellow]Restoring {server}.{database} to virgin state")
     else:

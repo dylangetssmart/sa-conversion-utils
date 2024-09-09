@@ -1,7 +1,7 @@
 import subprocess
 import os
 from datetime import datetime
-from ..utils.logger import log_message
+from ..utils.logger import log_message, log_error
 
 BASE_DIR = os.getcwd()
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))

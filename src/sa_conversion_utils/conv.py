@@ -1,11 +1,12 @@
 # External
 import os
 import argparse
-import re
 from importlib.resources import files
 from dotenv import load_dotenv
+from datetime import datetime
 from rich.console import Console
 from rich.table import Table
+from rich.prompt import Confirm
 
 # Import modules
 from .database.sql_runner import sql_runner
@@ -14,6 +15,7 @@ from .migrate.run import exec_conv
 from .migrate.mapping import generate_mapping
 from .migrate.initialize import initialize
 from .migrate.convert import main as convert
+from .utils.migration_logger import log_migration_step
 
 # Create a Rich console object
 console = Console()
@@ -23,16 +25,33 @@ BASE_DIR = os.path.dirname(__file__)
 
 # Load environment variables from the current working directory
 load_dotenv(os.path.join(os.getcwd(), '.env'))
+SERVER = os.getenv('SERVER')
+SOURCE_DB = os.getenv('SOURCE_DB')
+SA_DB = os.getenv('TARGET_DB')
 
 # Debugging: Print environment variables to check if they're loaded
 # for key, value in os.environ.items():
 #     if key in ['SERVER', 'SOURCE_DB', 'TARGET_DB']:
 #         print(f'{key}: {value}')
 
-# Load environment variables
-SERVER = os.getenv('SERVER')
-SOURCE_DB = os.getenv('SOURCE_DB')
-SA_DB = os.getenv('TARGET_DB')
+def execute_with_logging(func, args):
+    start_time = datetime.now()
+    output_errors = None
+
+    # command = get_command_name(func.__name__)
+    sub_command = args.subcommand
+    function_name = args.func.__name__
+    database = args.database or SA_DB
+    # print(sub_command,function_name,args.database,SA_DB,database)
+    try:
+        func(args)
+        status = "Completed"
+    except Exception as e:
+        status = "Failed"
+        output_errors = str(e)
+    
+    end_time = datetime.now()
+    log_migration_step(sub_command, function_name, database, status, start_time, end_time, output_errors)
 
 def read(args):
     print(SERVER, SOURCE_DB, SA_DB)
@@ -61,6 +80,11 @@ def backup(args):
     backup_db(options)
 
 def run(args):
+    # print(args)
+    # if not args.all and not args.series:
+    #     print("Error: The 'run' command requires the 'series' argument unless '--all' is specified.")
+    #     return
+    # print(args.subcommand, args.func.__name__)
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
@@ -73,10 +97,22 @@ def run(args):
     }
     exec_conv(options)
 
+    # Anticipate user needs.
+    # If the --backup flag was not used, provide a second chance to perform a backup.
+    # if not args.backup:
+    #     if Confirm.ask("The migration has been completed. Would you like to perform a backup now?"):
+    #         backup_options = {
+    #             'server': args.server or SERVER,
+    #             'database': args.database or SA_DB,
+    #             'directory': args.dir or os.path.join(os.getcwd(),'backups'),
+    #             'message': 'Backup after migration'
+    #         }
+    #         backup_db(backup_options)
+
 def restore(args):
     options = {
         'server': args.server or SERVER,
-        'name': args.name or SA_DB,
+        'database': args.database or SA_DB,
         'virgin': args.virgin
     }
     restore_db(options)
@@ -149,11 +185,16 @@ def print_rich_help(subcommands, title):
 
 def main():
     # Main entry point for the CLI.
+    global parser
     parser = argparse.ArgumentParser(description='SmartAdvocate Data Migration CLI.')
     subparsers = parser.add_subparsers(
         title="operations",
+        dest='subcommand'
         # help='sub-command help'
     )
+    # print('parser.prog: {}'.format(parser.prog))
+    # print(parser.parse_args(["backup"]))
+
 
     """ ##############################################################################################################
     # Database Operations
@@ -184,13 +225,13 @@ def main():
     backup_parser.add_argument('-m', '--message', help='Message to stamp on the .bak file.')
     backup_parser.add_argument('-dir', help='Directory to save the backup in. If not supplied, defaults to /backups.', metavar='')
     backup_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    backup_parser.add_argument('-db', help='Name of database to backup. If not supplied, defaults to SA_DB from .env.', metavar='')
+    backup_parser.add_argument('-db', '--database', help='Name of database to backup. If not supplied, defaults to SA_DB from .env.', metavar='')
     backup_parser.set_defaults(func=backup)
 
     # subcommand > db restore
     restore_db_parser = db_subparsers.add_parser('restore', help='Restore a database from a backup file.')
     restore_db_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    restore_db_parser.add_argument('-n', '--name', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
+    restore_db_parser.add_argument('-db', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
     restore_db_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
     restore_db_parser.set_defaults(func=restore)
 
@@ -232,20 +273,18 @@ def main():
     mapping_parser = migrate_subparsers.add_parser('map', help='Generate Excel mapping template.')
     mapping_parser.add_argument('system', nargs='?',help='SQL Script sequence to execute.', choices=['needles'], type=str)
     mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    mapping_parser.add_argument('-db', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
+    mapping_parser.add_argument('-db', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     mapping_parser.set_defaults(func=map)
 
     # subcommand > run
     run_parser = migrate_subparsers.add_parser('run', help='Run SQL scripts.')
-    # run_parser.add_argument('seq', nargs='?',help='SQL Script sequence to execute.', choices=range(0,10), type=int)
-    # run_parser.add_argument('seq', help='Script sequence to execute.', choices=['0','1','2','3','4','5','a','p','q'])
+    run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Select the script series to execute.')
     run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup SA database after script execution.')
     run_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     run_parser.add_argument('-db', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     run_parser.add_argument('-a', '--all', action='store_true', help='Run all sql scripts.')
     run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
     run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "mapping" directory.')
-    run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Run SQL scripts in the "mapping" directory.')
     run_parser.set_defaults(func=run)
     
     # subcommand > encrypt
@@ -269,6 +308,12 @@ def main():
 
     args = parser.parse_args()
 
+    # Get the invoked subcommand's title
+    # if args.subcommand:
+    #     print(f'Invoked subcommand: {args.subcommand}')
+    # else:
+    #     print('No subcommand invoked')
+
     if 'func' not in args:
         # parser.print_help()
          print_rich_help({
@@ -276,7 +321,12 @@ def main():
             "migrate": "Migration operations"
         }, "SmartAdvocate Migration CLI")
     else:
-        args.func(args)
+        # args.func(args)
+        execute_with_logging(args.func, args)
+
+
+
+
     # if 'func' not in args:
     #     parser.print_help()
     # else:
