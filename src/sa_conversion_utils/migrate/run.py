@@ -58,10 +58,10 @@ def exec_conv(options):
             return
         
        # Dynamic confirmation prompt
-        prompt_message = f"Are you sure you want to run [cyan]{script_type}[/cyan] SQL scripts"
+        prompt_message = f"Execute SQL scripts in [bold yellow]{script_type}[/bold yellow]"
         if series is not None:
-            prompt_message += f" with series {series}"
-        prompt_message += f" against [magenta]{server}[/magenta].[bright_red]{database}[/bright_red]?"
+            prompt_message += f" series [bold yellow]{series}[/bold yellow]"
+        prompt_message += f" against [bold yellow]{server}.{database}[/bold yellow]?"
 
         if Confirm.ask(prompt_message):
             with Progress(
@@ -87,14 +87,24 @@ def exec_conv(options):
                     )
                     progress.update(task, advance=1)
 
+        if backup:
+            backup_db({
+                'database': database,
+                'directory': os.path.join(BASE_DIR, 'backups'),
+                'sequence': series,
+                'server': server,
+                'message': 'AutoBackupFromExecute'
+            })
+        else:
+            if Confirm.ask("The migration has been completed. Would you like to perform a backup now?"):
+                backup_db({
+                'database': database,
+                'directory': os.path.join(BASE_DIR, 'backups'),
+                'sequence': series,
+                'server': server,
+                'message': 'AutoBackupFromExecute'
+            })
+
     except Exception as e:
         console.print(f'Error reading directory {sql_dir}\n{str(e)}', style="bold red")
 
-    if backup:
-        backup_db({
-            'database': database,
-            'directory': os.path.join(BASE_DIR, 'backups'),
-            'sequence': series,
-            'server': server,
-            'message': 'AutoBackupFromExecute'
-        })
