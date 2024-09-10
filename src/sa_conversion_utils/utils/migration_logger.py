@@ -6,15 +6,16 @@ import os
 LOG_FILE_PATH = os.path.join(os.getcwd(),'migration_log.xlsx')
 # LOG_FILE_PATH = os.path.join('path', 'to', 'your', 'repo', 'migration_log.xlsx')
 
-def log_migration_step(subcommand, function, database, status, start_time, end_time, output_errors):
+def log_migration_step(database, subcommand, function, args, status, start_time, end_time, output_errors):
     start_time_str = start_time.strftime('%Y-%m-%d %H:%M') if start_time else None
     end_time_str = end_time.strftime('%Y-%m-%d %H:%M') if end_time else None
     duration = str(end_time - start_time) if start_time and end_time else None
 
     log_entry = {
+        "Database": database,
         "Subcommand": subcommand,
         "Function": function,
-        "Database": database,
+        "Options": args,
         "Status": status,
         "Start Time": start_time_str,
         "End Time": end_time_str,
@@ -38,9 +39,3 @@ def wipe_migration_log():
     if os.path.exists(LOG_FILE_PATH):
         df = pd.DataFrame(columns=["Step Name", "Status", "Start Time", "End Time", "Duration", "Output/Errors", "Responsible"])
         df.to_excel(LOG_FILE_PATH, index=False)
-
-# Example usage
-# start_time = datetime.now()
-# # ... perform some migration step ...
-# end_time = datetime.now()
-# log_migration_step("Data Extraction", "Completed", start_time, end_time, None, "YourName")

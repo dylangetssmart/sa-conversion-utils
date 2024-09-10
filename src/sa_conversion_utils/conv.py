@@ -37,12 +37,24 @@ SA_DB = os.getenv('TARGET_DB')
 def execute_with_logging(func, args):
     start_time = datetime.now()
     output_errors = None
-
-    # command = get_command_name(func.__name__)
     sub_command = args.subcommand
     function_name = args.func.__name__
-    database = args.database or SA_DB
-    # print(sub_command,function_name,args.database,SA_DB,database)
+    database = getattr(args, 'database', None) or SA_DB if hasattr(args, 'database') else None
+    # print(args.series)
+
+    # Don't log when a parent command is run by itself (shows help)
+    if function_name == '<lambda>':
+        return
+
+    def get_relevant_args(sub_command):
+        match sub_command:
+            case 'run':
+                return args.series
+            case 'backup':
+                return args.message
+            case _:
+                return ''
+
     try:
         func(args)
         status = "Completed"
@@ -51,7 +63,16 @@ def execute_with_logging(func, args):
         output_errors = str(e)
     
     end_time = datetime.now()
-    log_migration_step(sub_command, function_name, database, status, start_time, end_time, output_errors)
+    log_migration_step(
+        database,
+        sub_command,
+        function_name,
+        get_relevant_args(sub_command),
+        status,
+        start_time,
+        end_time,
+        output_errors
+        )
 
 def read(args):
     print(SERVER, SOURCE_DB, SA_DB)
@@ -73,7 +94,7 @@ def map(args):
 def backup(args):
     options = {
         'server': args.server or SERVER,
-        'database': args.db or SA_DB,
+        'database': args.database or SA_DB,
         'directory': args.dir or os.path.join(os.getcwd(),'backups'),
         'message': args.message
     }
