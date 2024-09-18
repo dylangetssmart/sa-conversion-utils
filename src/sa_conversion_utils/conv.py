@@ -320,13 +320,6 @@ def main():
     convert_parser.add_argument('-i', '--input', help='Input path - file or directory to convert.')
     convert_parser.set_defaults(func=convert2)
 
-
-    # Read 
-    # read_parser = subparsers.add_parser('read', help='read sql scripts for testing.')
-    # read_parser.set_defaults(func=read)
-
-
-
     args = parser.parse_args()
 
     # Get the invoked subcommand's title
@@ -344,8 +337,6 @@ def main():
     else:
         # args.func(args)
         execute_with_logging(args.func, args)
-
-
 
 
     # if 'func' not in args:

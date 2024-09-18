@@ -31,14 +31,23 @@ def exec_conv(options):
 
     # Determine directory based on flags
     if init:
-        sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'init')
+        sql_dir = os.path.join(BASE_DIR, 'sql', 'init')
         script_type = 'init'
     elif map:
-        sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'map')
+        sql_dir = os.path.join(BASE_DIR, 'sql', 'map')
         script_type = 'map'
     else:
-        sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'conv')
+        sql_dir = os.path.join(BASE_DIR, 'sql', 'conv')
         script_type = 'conv'
+    # if init:
+    #     sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'init')
+    #     script_type = 'init'
+    # elif map:
+    #     sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'map')
+    #     script_type = 'map'
+    # else:
+    #     sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'conv')
+    #     script_type = 'conv'
 
     # Get list of SQL files
     try:
@@ -87,23 +96,23 @@ def exec_conv(options):
                     )
                     progress.update(task, advance=1)
 
-        if backup:
-            backup_db({
-                'database': database,
-                'directory': os.path.join(BASE_DIR, 'backups'),
-                'sequence': series,
-                'server': server,
-                'message': 'AutoBackupFromExecute'
-            })
-        else:
-            if Confirm.ask("The migration has been completed. Would you like to perform a backup now?"):
+            if backup:
                 backup_db({
-                'database': database,
-                'directory': os.path.join(BASE_DIR, 'backups'),
-                'sequence': series,
-                'server': server,
-                'message': 'AutoBackupFromExecute'
-            })
+                    'database': database,
+                    'directory': os.path.join(BASE_DIR, 'backups'),
+                    'sequence': series,
+                    'server': server,
+                    'message': 'AutoBackupFromExecute'
+                })
+            else:
+                if Confirm.ask("The migration has been completed. Would you like to perform a backup now?"):
+                    backup_db({
+                    'database': database,
+                    'directory': os.path.join(BASE_DIR, 'backups'),
+                    'sequence': series,
+                    'server': server,
+                    'message': 'AutoBackupFromExecute'
+                })
 
     except Exception as e:
         console.print(f'Error reading directory {sql_dir}\n{str(e)}', style="bold red")
