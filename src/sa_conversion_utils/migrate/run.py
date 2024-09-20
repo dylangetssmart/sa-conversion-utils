@@ -10,7 +10,7 @@ from rich.prompt import Confirm
 
 BASE_DIR = os.getcwd()
 load_dotenv(os.path.join(BASE_DIR, '.env'))
-SQL_DIR = os.getenv('SQL_DIR')
+SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
 WORKING_DIR = os.path.join(BASE_DIR, SQL_DIR)
 
 console = Console()

@@ -16,7 +16,7 @@ from ..utils.confirm import confirm_execution
 load_dotenv()
 # SERVER = os.getenv('SERVER')
 # LITIFY_DB = os.getenv('SOURCE_DB') # Import data to the source_db
-SQL_DIR = os.getenv('SQL_DIR')
+SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
 
 # WORKING_DIR = os.path.join(os.getcwd(),SQL_SCRIPTS_DIR)
 

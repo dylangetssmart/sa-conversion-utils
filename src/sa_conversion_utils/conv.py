@@ -14,7 +14,7 @@ from .database.db_utils import restore_db, backup_db, create_db
 from .migrate.run import exec_conv
 from .migrate.mapping import generate_mapping
 from .migrate.initialize import initialize
-from .migrate.convert import main as convert
+from .migrate.convert_csv_to_sql import main as convert
 from .utils.migration_logger import log_migration_step
 
 # Create a Rich console object
@@ -166,12 +166,13 @@ def encrypt(args):
     except Exception as e:
         print(f"An error occurred while running SSN encryption: {str(e)}")
 
-def convert2(args):
+def convert_csv_to_sql(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database,
         'input_path': args.input,
-        'table': args.table
+        'table': args.table,
+        'chunk_size': args.chunk
     }
     convert(options)
 
@@ -314,11 +315,12 @@ def main():
 
     # Migrate subcommand > convert
     convert_parser = migrate_subparsers.add_parser('convert', help='convert csv to sql')
-    convert_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    convert_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
-    convert_parser.add_argument('-t', '--table', help='Table name. If input is a directory, tables will be named after each .csv file imported.')
-    convert_parser.add_argument('-i', '--input', help='Input path - file or directory to convert.')
-    convert_parser.set_defaults(func=convert2)
+    convert_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
+    convert_parser.add_argument('-d', '--database', help='Database to execute against. Defaults to SA_DB from .env.', metavar='')
+    convert_parser.add_argument('-t', '--table', help='Table name. If ommited, tables will use file names.')
+    convert_parser.add_argument('-i', '--input', help='Input path. Supports file or directory.')
+    convert_parser.add_argument('-c', '--chunk', help='Chunk size used in processing .csv files. Default = 2,000', default=2000)
+    convert_parser.set_defaults(func=convert_csv_to_sql)
 
     args = parser.parse_args()
 
