@@ -60,11 +60,12 @@ def sql_runner(script_path: str, server: str, database: str, script_task, progre
 
         if progress:  # Use progress.console if progress object exists
             progress.console.print(f"[red]FAIL: {script_name}")
+            progress.update(script_task)
+            progress.remove_task(script_task)
         else:
             print(f"[red]FAIL: {script_name}")
 
         # progress.console.print(f"[red]FAIL: {script_name}")
-    
 
 
 # Main block
