@@ -28,6 +28,7 @@ def exec_conv(options):
     run_all = options.get('run_all', False)
     init = options.get('init', False)
     map = options.get('map', False)
+    post = options.get('post', False)
 
     # Determine directory based on flags
     if init:
@@ -36,6 +37,9 @@ def exec_conv(options):
     elif map:
         sql_dir = os.path.join(BASE_DIR, 'sql', 'map')
         script_type = 'map'
+    elif post:
+        sql_dir = os.path.join(BASE_DIR, 'sql', 'post')
+        script_type = 'post'
     else:
         sql_dir = os.path.join(BASE_DIR, 'sql', 'conv')
         script_type = 'conv'
@@ -67,7 +71,7 @@ def exec_conv(options):
             return
         
        # Dynamic confirmation prompt
-        prompt_message = f"Execute SQL scripts in [bold yellow]{script_type}[/bold yellow]"
+        prompt_message = f"Execute SQL scripts in [bold yellow]sql\\{script_type}[/bold yellow]"
         if series is not None:
             prompt_message += f" series [bold yellow]{series}[/bold yellow]"
         prompt_message += f" against [bold yellow]{server}.{database}[/bold yellow]?"

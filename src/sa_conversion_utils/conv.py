@@ -114,7 +114,8 @@ def run(args):
         'backup': args.backup,
         'run_all': args.all,
         'init': args.init,
-        'map': args.map
+        'map': args.map,
+        'post': args.post
     }
     exec_conv(options)
 
@@ -306,7 +307,8 @@ def main():
     run_parser.add_argument('-db', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     run_parser.add_argument('-a', '--all', action='store_true', help='Run all sql scripts.')
     run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
-    run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "mapping" directory.')
+    run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
+    run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')
     run_parser.set_defaults(func=run)
     
     # subcommand > encrypt
