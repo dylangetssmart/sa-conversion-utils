@@ -25,7 +25,7 @@ def select_bak_backup_file():
     return None
 
 def backup_db(options):
-    directory = options.get('directory')
+    directory = options.get('output')
     sequence = options.get('sequence')
     database = options.get('database')
     server = options.get('server')

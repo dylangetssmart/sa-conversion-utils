@@ -68,7 +68,7 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 	progress.remove_task(file_task)
 
 def process(engine, csv_files, table_name_options, chunk_size):
-	print(csv_files, 'process')
+	# print(csv_files, 'process')
 	with Progress(
 		SpinnerColumn(),
 		TextColumn("[progress.description]{task.description}"),

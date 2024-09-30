@@ -95,7 +95,7 @@ def backup(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
-        'directory': args.dir or os.path.join(os.getcwd(),'backups'),
+        'output': args.output or os.path.join(os.getcwd(),'backups'),
         'message': args.message
     }
     backup_db(options)
@@ -246,15 +246,15 @@ def main():
     # subcommand > db backup
     backup_parser = db_subparsers.add_parser('backup', help='Create database backups.')
     backup_parser.add_argument('-m', '--message', help='Message to stamp on the .bak file.')
-    backup_parser.add_argument('-dir', help='Directory to save the backup in. If not supplied, defaults to /backups.', metavar='')
+    backup_parser.add_argument('-o', help='Output directory to save the backup file in. If not supplied, defaults to /backups.', metavar='')
     backup_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    backup_parser.add_argument('-db', '--database', help='Name of database to backup. If not supplied, defaults to SA_DB from .env.', metavar='')
+    backup_parser.add_argument('-d', '--database', help='Name of database to backup. If not supplied, defaults to SA_DB from .env.', metavar='')
     backup_parser.set_defaults(func=backup)
 
     # subcommand > db restore
     restore_db_parser = db_subparsers.add_parser('restore', help='Restore a database from a backup file.')
     restore_db_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    restore_db_parser.add_argument('-db', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
+    restore_db_parser.add_argument('-d', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
     restore_db_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
     restore_db_parser.set_defaults(func=restore)
 
@@ -296,7 +296,7 @@ def main():
     mapping_parser = migrate_subparsers.add_parser('map', help='Generate Excel mapping template.')
     mapping_parser.add_argument('system', nargs='?',help='SQL Script sequence to execute.', choices=['needles'], type=str)
     mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    mapping_parser.add_argument('-db', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
+    mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     mapping_parser.set_defaults(func=map)
 
     # subcommand > run
@@ -304,7 +304,7 @@ def main():
     run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Select the script series to execute.')
     run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup SA database after script execution.')
     run_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    run_parser.add_argument('-db', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
+    run_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     run_parser.add_argument('-a', '--all', action='store_true', help='Run all sql scripts.')
     run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
     run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
