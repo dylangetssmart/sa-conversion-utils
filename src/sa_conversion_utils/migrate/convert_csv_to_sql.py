@@ -1,13 +1,31 @@
 import os
 import pandas as pd
-import time
-import mmap
+# import time
+# import chardet
+# import mmap
 from sqlalchemy import create_engine
+# https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 
-from ..utils.count_lines import count_lines_mmap
+# Relative import for package context
+try:
+	from ..utils.count_lines import count_lines_mmap
+	from ..utils.detect_encoding import detect_encoding
+# Absolute import for standalone context
+except ImportError:
+	from sa_conversion_utils.utils.count_lines import count_lines_mmap
+	from sa_conversion_utils.utils.detect_encoding import detect_encoding
+
+
+# step 1 = process
+# step 2 - convert
+# step 3 - convert calls read_csv_with_fallback()
+# read_csv_with_fallback calls pandas.read_csv()
+# step 4 convert invokes .to_sql() on the dataframe received from read_csv_with_fallback
+
+
 
 console = Console()
 encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
@@ -19,16 +37,50 @@ encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
 #             # Count the number of newlines
 #             return mm.read().count(b'\n')
 
+# def detect_encoding(file_path):
+#     with open(file_path, 'rb') as f:
+#         result = chardet.detect(f.read())
+#         return result['encoding']
+
 def read_csv_with_fallback(file_path):
 	# print(file_path)
-	for encoding in encodings:
+	# for encoding in encodings:
+	# 	try:
+	# 		df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
+	# 		return df, encoding
+	# 	except (UnicodeDecodeError, pd.errors.ParserError) as e:
+	# 		console.print(f"[yellow]Encoding error {file_path} with {encoding}. Error: {e}")
+	# 		continue
+	# raise ValueError(f"Unable to read the file {file_path} with known encodings.")
+
+	detected_encoding = detect_encoding(file_path)
+	all_encodings = [detected_encoding] + encodings
+
+	for encoding in all_encodings:
 		try:
 			df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
+			console.print(f"[green]Successfully read {os.path.basename(file_path)} with encoding: {encoding}")
 			return df, encoding
 		except (UnicodeDecodeError, pd.errors.ParserError) as e:
-			console.print(f"[yellow]Encoding error {file_path} with {encoding}. Error: {e}")
-			continue
-	raise ValueError(f"Unable to read the file {file_path} with known encodings.")
+			console.print(f"[yellow]Error reading {os.path.basename(file_path)} with encoding {encoding}: {e}")
+    
+	raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
+
+	# for encoding in encodings:
+	# 	try:
+	# 		df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
+	# 		return df, encoding
+	# 	except (UnicodeDecodeError, pd.errors.ParserError) as e:
+	# 		console.print(f"[yellow]Encoding error:\nFile: {os.path.basename(file_path)}\nEncoding: {encoding}\nError: {e}")
+	# 		continue
+    
+	# # console.print(f"[blue]Using detected encoding: {detected_encoding} for file {file_path}")
+    
+	# try:
+	# 	df = pd.read_csv(file_path, encoding=detected_encoding, low_memory=False)
+	# 	return df, detected_encoding
+	# except Exception as e:
+	# 	raise ValueError(f"Unable to read the file {file_path} even with detected encoding: {detected_encoding}. Error: {e}")
 
 def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size):
 	file_name = os.path.basename(file_path)
@@ -78,6 +130,7 @@ def process(engine, csv_files, table_name_options, chunk_size):
 		TimeElapsedColumn(),
 		"•",
 		TextColumn("{task.completed:,}/{task.total:,}"),
+		TextColumn(f"Chunk size: {chunk_size} rows"),
 		console=console
 	) as progress:
 		overall_task = progress.add_task("[cyan]Importing CSV files", total=len(csv_files))
@@ -110,7 +163,7 @@ def main(options):
     # If input_path is a file
 	elif os.path.isfile(input_path):
 		if input_path.endswith('.csv'):	
-			if Confirm.ask(f'Import {input_path}?'):
+			if Confirm.ask(f'Import {os.path.basename(input_path)}?'):
 				csv_files = [input_path]  # Treat it as a single-file list for consistency
 			else:
 				console.print(f"[yellow]The specified file is not a CSV: {input_path}")
@@ -126,8 +179,9 @@ def main(options):
 if __name__ == "__main__":
     options = {
         'server': 'DylanS\\MSSQLSERVER2022',
-        'database': 'ShinerLitify',
-        'input_path': 'D:\\ForTanya\\2024-09-06',
+        'database': 'JoelBieber_GrowPath',
+        'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup\user_profile.csv",
+        # 'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup",
 		'chunk_size': 2000
     }
     main(options)
