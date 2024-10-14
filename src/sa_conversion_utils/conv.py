@@ -14,7 +14,7 @@ from .database.db_utils import restore_db, backup_db, create_db
 from .migrate.run import exec_conv
 from .migrate.mapping import generate_mapping
 from .migrate.initialize import initialize
-from .migrate.convert_csv_to_sql import main as convert
+from .migrate.csv_to_sql import main as convert
 from .utils.migration_logger import log_migration_step
 
 # Create a Rich console object
@@ -321,7 +321,7 @@ def main():
     convert_parser.add_argument('-d', '--database', help='Database to execute against. Defaults to SA_DB from .env.', metavar='')
     convert_parser.add_argument('-t', '--table', help='Table name. If ommited, tables will use file names.')
     convert_parser.add_argument('-i', '--input', help='Input path. Supports file or directory.')
-    convert_parser.add_argument('-c', '--chunk', help='Chunk size used in processing .csv files. Default = 2,000', default=2000)
+    convert_parser.add_argument('-c', '--chunk', type=int, help='Chunk size used in processing .csv files. Default = 2,000', default=2000)
     convert_parser.set_defaults(func=convert_csv_to_sql)
 
     args = parser.parse_args()

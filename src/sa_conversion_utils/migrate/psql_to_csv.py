@@ -145,13 +145,13 @@ def main(options):
     database = options.get('database')
     username = options.get('username')
     password = options.get('password')
+    output_path = options.get('output')
 
+    # Store password in environment variables so that psql doesn't ask on each query
     os.environ["PGPASSWORD"] = password
-
     
-    
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)  # Create the directory if it doesn't exist
+    if not os.path.exists(os.path.join(output_path, data_dir)):
+        os.makedirs(os.path.join(output_path, data_dir))
     print(f"Data will be stored in {data_dir}")
 
     # Fetch list of tables
@@ -169,7 +169,8 @@ if __name__ == "__main__":
         'host': 'localhost',
         'database': 'joelbieber_backup',
         'username': 'postgres',
-        'password': 'SAsuper'
+        'password': 'SAsuper',
+        'output': r'D:\Needles-JoelBieber'
     }
 
     # if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h']:

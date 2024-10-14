@@ -59,7 +59,7 @@ def read_csv_with_fallback(file_path):
 	for encoding in all_encodings:
 		try:
 			df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
-			console.print(f"[green]Successfully read {os.path.basename(file_path)} with encoding: {encoding}")
+			# console.print(f"[green]Successfully read {os.path.basename(file_path)} with encoding: {encoding}")
 			return df, encoding
 		except (UnicodeDecodeError, pd.errors.ParserError) as e:
 			console.print(f"[yellow]Error reading {os.path.basename(file_path)} with encoding {encoding}: {e}")
@@ -110,9 +110,9 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 				progress.console.print(f"[red]General Exception during import of chunk {i} for {file_name}. Error: {e}")
 				raise
 				
-		progress.console.print(f"[green]Success: Imported {file_name} into table {table_name}.")
+		progress.console.print(f"[green]PASS: {file_name}")
 	else:
-		progress.console.print(f"[yellow]Skipped: {file_name} is empty.")
+		progress.console.print(f"[yellow]SKIP: {file_name} is empty.")
 
     # Explicitly mark file task as complete
 	progress.update(file_task, completed=line_count)
@@ -130,7 +130,7 @@ def process(engine, csv_files, table_name_options, chunk_size):
 		TimeElapsedColumn(),
 		"•",
 		TextColumn("{task.completed:,}/{task.total:,}"),
-		TextColumn(f"Chunk size: {chunk_size} rows"),
+		TextColumn(f"Chunk size: {chunk_size:,} rows"),
 		console=console
 	) as progress:
 		overall_task = progress.add_task("[cyan]Importing CSV files", total=len(csv_files))
