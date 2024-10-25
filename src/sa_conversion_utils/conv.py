@@ -8,81 +8,63 @@ from rich.console import Console
 from rich.table import Table
 from rich.prompt import Confirm
 
-# Import modules
-from .database.sql_runner import sql_runner
-from .database.db_utils import restore_db, backup_db, create_db
-from .migrate.run import exec_conv
-from .migrate.mapping import generate_mapping
-from .migrate.initialize import initialize
-from .migrate.csv_to_sql import main as convert
-from .utils.migration_logger import log_migration_step
+# Module imports
+# from sql_runner import sql_runner
+from sa_conversion_utils.db_utils import restore_db, backup_db, create_db
+from sa_conversion_utils.run import exec_conv
+from sa_conversion_utils.mapping import generate_mapping
+from sa_conversion_utils.csv_to_sql import main as convert_csv_to_sql
+from sa_conversion_utils.psql_to_csv import main as convert_psql_to_csv
+from .utilities.migration_logger import log_migration_step
 
-# Create a Rich console object
 console = Console()
 
-# Constants
+# Load environment variables
 BASE_DIR = os.path.dirname(__file__)
-
-# Load environment variables from the current working directory
 load_dotenv(os.path.join(os.getcwd(), '.env'))
 SERVER = os.getenv('SERVER')
 SOURCE_DB = os.getenv('SOURCE_DB')
 SA_DB = os.getenv('TARGET_DB')
 
-# Debugging: Print environment variables to check if they're loaded
-# for key, value in os.environ.items():
-#     if key in ['SERVER', 'SOURCE_DB', 'TARGET_DB']:
-#         print(f'{key}: {value}')
+# def execute_with_logging(func, args):
+#     start_time = datetime.now()
+#     output_errors = None
+#     sub_command = args.subcommand
+#     function_name = args.func.__name__
+#     database = getattr(args, 'database', None) or SA_DB if hasattr(args, 'database') else None
+#     # print(args.series)
 
-def execute_with_logging(func, args):
-    start_time = datetime.now()
-    output_errors = None
-    sub_command = args.subcommand
-    function_name = args.func.__name__
-    database = getattr(args, 'database', None) or SA_DB if hasattr(args, 'database') else None
-    # print(args.series)
+#     # Don't log when a parent command is run by itself (shows help)
+#     if function_name == '<lambda>':
+#         return
 
-    # Don't log when a parent command is run by itself (shows help)
-    if function_name == '<lambda>':
-        return
+#     def get_relevant_args(sub_command):
+#         match sub_command:
+#             case 'run':
+#                 return args.series
+#             case 'backup':
+#                 return args.message
+#             case _:
+#                 return ''
 
-    def get_relevant_args(sub_command):
-        match sub_command:
-            case 'run':
-                return args.series
-            case 'backup':
-                return args.message
-            case _:
-                return ''
-
-    try:
-        func(args)
-        status = "Completed"
-    except Exception as e:
-        status = "Failed"
-        output_errors = str(e)
+#     try:
+#         func(args)
+#         status = "Completed"
+#     except Exception as e:
+#         status = "Failed"
+#         output_errors = str(e)
     
-    end_time = datetime.now()
-    log_migration_step(
-        database,
-        sub_command,
-        function_name,
-        get_relevant_args(sub_command),
-        status,
-        start_time,
-        end_time,
-        output_errors
-        )
-
-def read(args):
-    print(SERVER, SOURCE_DB, SA_DB)
-    # pkg = files('smart_conversion')
-    # pkg_data_file = pkg / ''
-    # print(files('sql.conv'))
-    # with importlib.resources.files(__package__).joinpath('sql/conv') as sql_dir:
-    #     for file in os.listdir(sql_dir):
-    #         if file.endswith('.sql'):
-    #             print(file)
+#     end_time = datetime.now()
+#     log_migration_step(
+#         database,
+#         sub_command,
+#         function_name,
+#         get_relevant_args(sub_command),
+#         status,
+#         start_time,
+#         end_time,
+#         output_errors
+#         )
 
 def map(args):
     options = {
@@ -115,7 +97,8 @@ def run(args):
         'run_all': args.all,
         'init': args.init,
         'map': args.map,
-        'post': args.post
+        'post': args.post,
+        'skip': args.skip
     }
     exec_conv(options)
 
@@ -138,14 +121,6 @@ def restore(args):
         'virgin': args.virgin
     }
     restore_db(options)
-
-# def init(args):
-#     options = {
-#         'server': args.srv or SERVER,
-#         'database': args.db or SA_DB,
-#         'system': args.system
-#     }
-#     initialize(options)
 
 def create(args):
     options = {
@@ -175,7 +150,17 @@ def convert_csv_to_sql(args):
         'table': args.table,
         'chunk_size': args.chunk
     }
-    convert(options)
+    convert_csv_to_sql(options)
+
+def convert_psql_to_csv(args):  
+    options = {
+        'server': args.server,
+        'database': args.database,
+        'username': args.username,
+        'password': args.password,
+        'output': args.output
+    }
+    convert_psql_to_csv(options)
 
 # Initialize the command help dictionary
 command_help = {
@@ -207,124 +192,87 @@ def print_rich_help(subcommands, title):
     console.print(table)
 
 def main():
-    # Main entry point for the CLI.
-    global parser
-    parser = argparse.ArgumentParser(description='SmartAdvocate Data Migration CLI.')
+    parser = argparse.ArgumentParser(description='SmartAdvocate Data Conversion CLI.')
     subparsers = parser.add_subparsers(
         title="operations",
         dest='subcommand'
         # help='sub-command help'
     )
-    # print('parser.prog: {}'.format(parser.prog))
-    # print(parser.parse_args(["backup"]))
 
-
-    """ ##############################################################################################################
-    # Database Operations
-        1. connect
-        2. restore
-        3. backup
-        4. create (?)
-    """ ##############################################################################################################
-
-    # Parent command "db"
-    db_parser = subparsers.add_parser('db', help="Database operations")
-    db_subparsers = db_parser.add_subparsers(title="Database commands")
-
-    # If no subcommand is provided for 'db', print rich help
-    db_parser.set_defaults(func=lambda args: print_rich_help({
-        "connect": "Connect to the database",
-        "test": "Test database connection",
-        "backup": "Create database backups",
-        "restore": "Restore a database from a backup file"
-    }, "Database Operations"))
-
-    # subcommand > db connect
-    connect_parser = db_subparsers.add_parser('connect', help='Connect to a database')
-    # connect_parser
-
-    # subcommand > db backup
-    backup_parser = db_subparsers.add_parser('backup', help='Create database backups.')
-    backup_parser.add_argument('-m', '--message', help='Message to stamp on the .bak file.')
-    backup_parser.add_argument('-o', help='Output directory to save the backup file in. If not supplied, defaults to /backups.', metavar='')
-    backup_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    backup_parser.add_argument('-d', '--database', help='Name of database to backup. If not supplied, defaults to SA_DB from .env.', metavar='')
+    # Command: backup
+    backup_parser = subparsers.add_parser('backup', help='Backup database')
+    backup_parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
+    backup_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
+    backup_parser.add_argument('-o', '--output', help='Output directory. Defaults to /backups', metavar='')
+    backup_parser.add_argument('-m', '--message', help='Optional message to include in the filename', metavar='')
     backup_parser.set_defaults(func=backup)
 
-    # subcommand > db restore
-    restore_db_parser = db_subparsers.add_parser('restore', help='Restore a database from a backup file.')
-    restore_db_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    restore_db_parser.add_argument('-d', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
-    restore_db_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
-    restore_db_parser.set_defaults(func=restore)
+    # Command: restore
+    restore_parser = subparsers.add_parser('restore', help='Restore database')
+    restore_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
+    restore_parser.add_argument('-d', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
+    restore_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
+    restore_parser.set_defaults(func=restore)
 
-    # Create DB
-    # create_db_parser = subparsers.add_parser('create', help='Create a SQL Server database.')
-    # create_db_parser.add_argument('-s', '--server', help='Server name.', metavar='')
-    # create_db_parser.add_argument('name', help='Database name.', metavar='name')
-    # create_db_parser.set_defaults(func=create)
-
-    """ ##############################################################################################################
-    Migration Operations 
-        1. init
-        2. map
-        3. run
-        4. encrypt
-        5. convert
-    """ ##############################################################################################################
-
-    # Parent command "migrate"
-    migrate_parser = subparsers.add_parser('migrate', help='Migration operations')
-    migrate_subparsers = migrate_parser.add_subparsers(title='migrate commands')
-
-    # If no subcommand is provided for 'migrate', print rich help
-    migrate_parser.set_defaults(func=lambda args: print_rich_help({
-        "init": "Connect to the database",
-        "map": "Test database connection",
-        "run": "Create database backups",
-        "encrypt": "Restore a database from a backup file",
-        "convert": "testing"
-    }, "Database Operations"))
-
-    # subcommand > init
-    # init_parser = subparsers.add_parser('init', help='Initialize Needles database with functions and indexes.')
-    # init_parser.add_argument('-srv', help='Server name.', metavar='')
-    # init_parser.add_argument('-db', help='Needles database to initialize.', metavar='')
-    # init_parser.set_defaults(func=init)
-    
-    # subcommand > map
-    mapping_parser = migrate_subparsers.add_parser('map', help='Generate Excel mapping template.')
+    # Command: map
+    mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
     mapping_parser.add_argument('system', nargs='?',help='SQL Script sequence to execute.', choices=['needles'], type=str)
     mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     mapping_parser.set_defaults(func=map)
 
-    # subcommand > run
-    run_parser = migrate_subparsers.add_parser('run', help='Run SQL scripts.')
+    # Command: run
+    run_parser = subparsers.add_parser('run', help='Run SQL scripts')
     run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Select the script series to execute.')
-    run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup SA database after script execution.')
     run_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     run_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
+    run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup SA database after script execution.')
     run_parser.add_argument('-a', '--all', action='store_true', help='Run all sql scripts.')
     run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
     run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
     run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')
+    run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename.')
     run_parser.set_defaults(func=run)
     
-    # subcommand > encrypt
-    encrypt_parser = migrate_subparsers.add_parser('encrypt', help='Run SSN Encryption utility.')
+    # Command: encrypt
+    encrypt_parser = subparsers.add_parser('encrypt', help='Run SSN Encryption')
     encrypt_parser.set_defaults(func=encrypt)
 
-    # Migrate subcommand > convert
-    convert_parser = migrate_subparsers.add_parser('convert', help='convert csv to sql')
-    convert_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
-    convert_parser.add_argument('-d', '--database', help='Database to execute against. Defaults to SA_DB from .env.', metavar='')
-    convert_parser.add_argument('-t', '--table', help='Table name. If ommited, tables will use file names.')
-    convert_parser.add_argument('-i', '--input', help='Input path. Supports file or directory.')
-    convert_parser.add_argument('-c', '--chunk', type=int, help='Chunk size used in processing .csv files. Default = 2,000', default=2000)
-    convert_parser.set_defaults(func=convert_csv_to_sql)
+    # Command: convert
+    convert_parser = subparsers.add_parser("convert", help="Convert data from one type to another, such as .csv to sql")
+    convert_subparsers = convert_parser.add_subparsers(title="Convert Variants", dest="convert_variant")
+    # convert_parser = subparsers.add_parser('convert', help='convert csv to sql')
+    # convert_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
+    # convert_parser.add_argument('-d', '--database', help='Database to execute against. Defaults to SA_DB from .env.', metavar='')
+    # convert_parser.add_argument('-t', '--table', help='Table name. If ommited, tables will use file names.')
+    # convert_parser.add_argument('-i', '--input', help='Input path. Supports file or directory.')
+    # convert_parser.add_argument('-c', '--chunk', type=int, help='Chunk size used in processing .csv files. Default = 2,000', default=2000)
+    # convert_parser.set_defaults(func=convert_csv_to_sql)
+
+    # Subcommand: convert csv-to-sql
+    csv_to_sql_parser = convert_subparsers.add_parser("csv-to-sql", help="Convert CSV to SQL")
+    csv_to_sql_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
+    csv_to_sql_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env.', metavar='')
+    csv_to_sql_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
+    # csv_to_sql_parser.add_argument("-t", "--table", help="Table name in the database")
+    csv_to_sql_parser.add_argument("-c", "--chunk", type=int, default=2000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
+    csv_to_sql_parser.set_defaults(func=convert_csv_to_sql)
+
+    # Subcommand: convert psql-to-csv
+    psql_to_csv_parser = convert_subparsers.add_parser("psql-to-csv", help="Convert PostgreSQL to CSV")
+    
+    psql_to_csv_parser.add_argument("-s", "--server", required=True, help="PostgreSQL hostname")
+    psql_to_csv_parser.add_argument("-d", "--database", required=True, help="PostgreSQL database name")
+    psql_to_csv_parser.add_argument("-u", "--username", required=True, help="PostgreSQL username")
+    psql_to_csv_parser.add_argument("-p", "--password", required=True, help="PostgreSQL password")
+    psql_to_csv_parser.add_argument("-o", "--output", required=True, help="Output path for .csv files")
+    psql_to_csv_parser.set_defaults(func=convert_psql_to_csv)
 
     args = parser.parse_args()
+    if 'func' not in args:
+        parser.print_help()
+    else:
+        args.func(args)
 
     # Get the invoked subcommand's title
     # if args.subcommand:
@@ -332,15 +280,15 @@ def main():
     # else:
     #     print('No subcommand invoked')
 
-    if 'func' not in args:
-        # parser.print_help()
-         print_rich_help({
-            "db": "Database operations",
-            "migrate": "Migration operations"
-        }, "SmartAdvocate Migration CLI")
-    else:
-        # args.func(args)
-        execute_with_logging(args.func, args)
+    # if 'func' not in args:
+    #     # parser.print_help()
+    #      print_rich_help({
+    #         "db": "Database operations",
+    #         "migrate": "Migration operations"
+    #     }, "SmartAdvocate Migration CLI")
+    # else:
+    #     # args.func(args)
+    #     execute_with_logging(args.func, args)
 
 
     # if 'func' not in args:

@@ -1,9 +1,9 @@
 import os
 import re
 from dotenv import load_dotenv
-from ..database.db_utils import backup_db
-from ..database.sql_runner import sql_runner
-from ..utils.confirm import confirm_execution
+from sa_conversion_utils.db_utils import backup_db
+from sa_conversion_utils.sql_runner import sql_runner
+from .utilities.confirm import confirm_execution
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 from rich.prompt import Confirm
@@ -29,33 +29,33 @@ def exec_conv(options):
     init = options.get('init', False)
     map = options.get('map', False)
     post = options.get('post', False)
+    skip = options.get('skip', False)
 
     # Determine directory based on flags
-    if init:
-        sql_dir = os.path.join(BASE_DIR, 'sql', 'init')
-        script_type = 'init'
-    elif map:
-        sql_dir = os.path.join(BASE_DIR, 'sql', 'map')
-        script_type = 'map'
-    elif post:
-        sql_dir = os.path.join(BASE_DIR, 'sql', 'post')
-        script_type = 'post'
-    else:
-        sql_dir = os.path.join(BASE_DIR, 'sql', 'conv')
-        script_type = 'conv'
-    # if init:
-    #     sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'init')
-    #     script_type = 'init'
-    # elif map:
-    #     sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'map')
-    #     script_type = 'map'
-    # else:
-    #     sql_dir = os.path.join(BASE_DIR, 'sql', 'needles', 'conv')
-    #     script_type = 'conv'
+    try:
+        if init:
+            sql_dir = os.path.join(BASE_DIR, 'sql', 'init')
+            script_type = 'init'
+        elif map:
+            sql_dir = os.path.join(BASE_DIR, 'sql', 'map')
+            script_type = 'map'
+        elif post:
+            sql_dir = os.path.join(BASE_DIR, 'sql', 'post')
+            script_type = 'post'
+        else:
+            sql_dir = os.path.join(BASE_DIR, 'sql', 'conv')
+            script_type = 'conv'
+    except Exception as e:
+        console.print(f'Error setting SQL directory: {str(e)}', style="bold red")
+        return
 
     # Get list of SQL files
     try:
         scripts = [file for file in os.listdir(sql_dir) if file.lower().endswith('.sql')]
+
+        # Omit files with "skip" in the name if the skip option is True
+        if skip:
+            scripts = [file for file in scripts if 'skip' not in file.lower()]
 
         # Filter scripts based on series pattern
         if not run_all:
@@ -69,8 +69,12 @@ def exec_conv(options):
         if not scripts:
             console.print(f'No scripts found for the specified pattern.', style="bold yellow")
             return
-        
-       # Dynamic confirmation prompt
+    except Exception as e:
+        console.print(f'Error reading SQL scripts: {str(e)}', style="bold red")
+        return
+
+    # Confirmation prompt and execution
+    try:
         prompt_message = f"Execute SQL scripts in [bold yellow]sql\\{script_type}[/bold yellow]"
         if series is not None:
             prompt_message += f" series [bold yellow]{series}[/bold yellow]"
@@ -99,8 +103,22 @@ def exec_conv(options):
                         progress
                     )
                     progress.update(task, advance=1)
+    except Exception as e:
+        console.print(f'Error during SQL script execution: {str(e)}', style="bold red")
+        return
 
-            if backup:
+    # Backup process
+    try:
+        if backup:
+            backup_db({
+                'database': database,
+                'directory': os.path.join(BASE_DIR, 'backups'),
+                'sequence': series,
+                'server': server,
+                'message': 'AutoBackupFromExecute'
+            })
+        else:
+            if Confirm.ask("The migration has been completed. Would you like to perform a backup now?"):
                 backup_db({
                     'database': database,
                     'directory': os.path.join(BASE_DIR, 'backups'),
@@ -108,16 +126,5 @@ def exec_conv(options):
                     'server': server,
                     'message': 'AutoBackupFromExecute'
                 })
-            else:
-                if Confirm.ask("The migration has been completed. Would you like to perform a backup now?"):
-                    backup_db({
-                    'database': database,
-                    'directory': os.path.join(BASE_DIR, 'backups'),
-                    'sequence': series,
-                    'server': server,
-                    'message': 'AutoBackupFromExecute'
-                })
-
     except Exception as e:
-        console.print(f'Error reading directory {sql_dir}\n{str(e)}', style="bold red")
-
+        console.print(f'Error during backup: {str(e)}', style="bold red")

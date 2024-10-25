@@ -1,46 +1,32 @@
+# External
 import os
 import pandas as pd
-# import time
-# import chardet
-# import mmap
 from sqlalchemy import create_engine
 # https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 
+# Lib
 # Relative import for package context
 try:
-	from ..utils.count_lines import count_lines_mmap
-	from ..utils.detect_encoding import detect_encoding
+	from .utilities.count_lines import count_lines_mmap
+	from .utilities.detect_encoding import detect_encoding
 # Absolute import for standalone context
 except ImportError:
-	from sa_conversion_utils.utils.count_lines import count_lines_mmap
-	from sa_conversion_utils.utils.detect_encoding import detect_encoding
+	from sa_conversion_utils.utilities.count_lines import count_lines_mmap
+	from sa_conversion_utils.utilities.detect_encoding import detect_encoding
 
 
 # step 1 = process
-# step 2 - convert
-# step 3 - convert calls read_csv_with_fallback()
-# read_csv_with_fallback calls pandas.read_csv()
-# step 4 convert invokes .to_sql() on the dataframe received from read_csv_with_fallback
-
+#	just wraps convert with a Rich progress bar
+# 	progress bar can be refactored into main()
+# step 2 - convert	
+#	reads the csv file into a dataframe and attempts to write to sql
 
 
 console = Console()
 encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
-
-# def count_lines_mmap(file_path):
-#     with open(file_path, 'r') as f:
-#         # Memory-map the file, size 0 means whole file
-#         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
-#             # Count the number of newlines
-#             return mm.read().count(b'\n')
-
-# def detect_encoding(file_path):
-#     with open(file_path, 'rb') as f:
-#         result = chardet.detect(f.read())
-#         return result['encoding']
 
 def read_csv_with_fallback(file_path):
 	# print(file_path)
