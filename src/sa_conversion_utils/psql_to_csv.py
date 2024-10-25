@@ -141,7 +141,7 @@ def main(options):
     1. get tables
     2. COPY TO for each table
     """
-    host = options.get('host')
+    host = options.get('server')
     database = options.get('database')
     username = options.get('username')
     password = options.get('password')

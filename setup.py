@@ -30,12 +30,13 @@ setup(
         "rich",
         "python-dotenv",
         "pyodbc",
-        "openpyxl"
+        "openpyxl",
+        "chardet"
         # "tkinter"
     ],
     extras_require={
         "dev": ["pytest>=7.0", "twine>=4.0.2"],
     },
     python_requires=">=3.10",
-    entry_points={"console_scripts": ["sami = sa_conversion_utils.conv:main"]}
+    entry_points={"console_scripts": ["samt = sa_conversion_utils.conv:main"]}
 )

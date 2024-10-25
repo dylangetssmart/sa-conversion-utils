@@ -6,7 +6,6 @@ from datetime import datetime
 from tkinter import filedialog
 from rich.console import Console
 from rich.prompt import Confirm
-from ..utils.confirm import confirm_execution
 
 console = Console()
 
@@ -25,35 +24,32 @@ def select_bak_backup_file():
     return None
 
 def backup_db(options):
-    directory = options.get('output')
-    sequence = options.get('sequence')
-    database = options.get('database')
     server = options.get('server')
+    database = options.get('database')
+    output_path = options.get('output')
     message = options.get('message')
 
     if not server:
-        raise ValueError("Server environment variable is not set.")
+        raise ValueError("Missing SQL Server argument")
 
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
-    # backup_path1 = os.path.join(directory, f'{database}-{message}_{timestamp}.bak')
 
-    filename = f'{database}-{message}_{timestamp}.bak'
-    if sequence:
-        filename = f'{database}-{message}_-afterSeq{sequence}_{timestamp}.bak'
+    if message:
+        filename = f'{database}_{message}_{timestamp}.bak'
+    else:
+        filename = f'{database}_{timestamp}.bak'
 
-    backup_path1 = os.path.join(directory, filename)
-    # backup_path1 = os.path.join(directory, f'{database}-aftersequence-{sequence}_{timestamp}.bak')
-    # backup_path2 = os.path.join(directory, f'{database_name2}-after-{sequence}_{timestamp}.bak')
+    backup_path = os.path.join(output_path, filename)
 
     # Ensure the backup directory exists
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
-    backup_command1 = f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path1}' WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
+    backup_command = f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path}' WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
 
     try:
-        subprocess.run(backup_command1, check=True, shell=True)
-        print(f"Backup for {database} completed successfully at {directory}.")
+        subprocess.run(backup_command, check=True, shell=True)
+        print(f"Backup for {database} completed successfully at {output_path}.")
     except subprocess.CalledProcessError as error:
         print(f"Error backing up database {database}:", error)
 
