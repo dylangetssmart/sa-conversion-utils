@@ -11,8 +11,3 @@ def log_error(log_file, error_message: str, file_path: str):
     full_message = f"{error_message}: {file_uri}"
     # Log the message using the log_message function
     log_message(log_file, full_message)
-
-# Example usage
-# error_file = "C:/Users/JohnDoe/Documents/error_file.sql"
-# log_file = "C:/Users/JohnDoe/Documents/error_log.txt"
-# log_error(log_file, "Error processing file", error_file)

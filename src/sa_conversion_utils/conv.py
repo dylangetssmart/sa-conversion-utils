@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 
 # Module imports
 # from sql_runner import sql_runner
@@ -83,6 +83,7 @@ def backup(args):
     backup_db(options)
 
 def run(args):
+    # Prompt.ask("Enter script series to run", choices=['conv', 'map','init','utilities'])
     # print(args)
     # if not args.all and not args.series:
     #     print("Error: The 'run' command requires the 'series' argument unless '--all' is specified.")
@@ -98,21 +99,10 @@ def run(args):
         'init': args.init,
         'map': args.map,
         'post': args.post,
-        'skip': args.skip
+        'skip': args.skip,
+        'debug': args.debug
     }
     exec_conv(options)
-
-    # Anticipate user needs.
-    # If the --backup flag was not used, provide a second chance to perform a backup.
-    # if not args.backup:
-    #     if Confirm.ask("The migration has been completed. Would you like to perform a backup now?"):
-    #         backup_options = {
-    #             'server': args.server or SERVER,
-    #             'database': args.database or SA_DB,
-    #             'directory': args.dir or os.path.join(os.getcwd(),'backups'),
-    #             'message': 'Backup after migration'
-    #         }
-    #         backup_db(backup_options)
 
 def restore(args):
     options = {
@@ -142,17 +132,17 @@ def encrypt(args):
     except Exception as e:
         print(f"An error occurred while running SSN encryption: {str(e)}")
 
-def convert_csv_to_sql(args):
+def handle_convert_csv_to_sql(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database,
         'input_path': args.input,
-        'table': args.table,
+        # 'table': args.table,
         'chunk_size': args.chunk
     }
     convert_csv_to_sql(options)
 
-def convert_psql_to_csv(args):  
+def handle_convert_psql_to_csv(args):  
     options = {
         'server': args.server,
         'database': args.database,
@@ -161,35 +151,6 @@ def convert_psql_to_csv(args):
         'output': args.output
     }
     convert_psql_to_csv(options)
-
-# Initialize the command help dictionary
-command_help = {
-    'db': {},
-    'migrate': {}
-}
-
-def populate_command_help(parser, parent_command):
-    """Populate command_help dictionary based on the parser."""
-    for subcommand, details in parser._subparsers._actions[0].choices.items():
-        description = details.description if details.description else "No description provided"
-        flags = ', '.join([f'-{arg.dest}' for arg in details._actions if arg.dest != 'help'])
-        command_help[parent_command][subcommand] = {
-            'description': description,
-            'flags': flags
-        }
-
-def print_rich_help(subcommands, title):
-    """Prints help using a rich table."""
-    table = Table(title=title, title_style="bold cyan")
-    table.add_column("Command", style="magenta", no_wrap=True)
-    table.add_column("Description", style="green")
-    
-    # Add subcommands and descriptions to the table
-    for subcommand, description in subcommands.items():
-        table.add_row(subcommand, description)
-    
-    # Print the table using Rich console
-    console.print(table)
 
 def main():
     parser = argparse.ArgumentParser(description='SmartAdvocate Data Conversion CLI.')
@@ -232,6 +193,7 @@ def main():
     run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
     run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')
     run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename.')
+    run_parser.add_argument('--debug', action='store_true', help='Enable skipping scripts with "skip" in the filename.')
     run_parser.set_defaults(func=run)
     
     # Command: encrypt
@@ -241,65 +203,30 @@ def main():
     # Command: convert
     convert_parser = subparsers.add_parser("convert", help="Convert data from one type to another, such as .csv to sql")
     convert_subparsers = convert_parser.add_subparsers(title="Convert Variants", dest="convert_variant")
-    # convert_parser = subparsers.add_parser('convert', help='convert csv to sql')
-    # convert_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
-    # convert_parser.add_argument('-d', '--database', help='Database to execute against. Defaults to SA_DB from .env.', metavar='')
-    # convert_parser.add_argument('-t', '--table', help='Table name. If ommited, tables will use file names.')
-    # convert_parser.add_argument('-i', '--input', help='Input path. Supports file or directory.')
-    # convert_parser.add_argument('-c', '--chunk', type=int, help='Chunk size used in processing .csv files. Default = 2,000', default=2000)
-    # convert_parser.set_defaults(func=convert_csv_to_sql)
 
     # Subcommand: convert csv-to-sql
-    csv_to_sql_parser = convert_subparsers.add_parser("csv-to-sql", help="Convert CSV to SQL")
+    csv_to_sql_parser = convert_subparsers.add_parser("csv-sql", help="Convert CSV to SQL")
     csv_to_sql_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
     csv_to_sql_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env.', metavar='')
     csv_to_sql_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
     # csv_to_sql_parser.add_argument("-t", "--table", help="Table name in the database")
     csv_to_sql_parser.add_argument("-c", "--chunk", type=int, default=2000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
-    csv_to_sql_parser.set_defaults(func=convert_csv_to_sql)
+    csv_to_sql_parser.set_defaults(func=handle_convert_csv_to_sql)
 
     # Subcommand: convert psql-to-csv
-    psql_to_csv_parser = convert_subparsers.add_parser("psql-to-csv", help="Convert PostgreSQL to CSV")
-    
+    psql_to_csv_parser = convert_subparsers.add_parser("psql-csv", help="Convert PostgreSQL to CSV")
     psql_to_csv_parser.add_argument("-s", "--server", required=True, help="PostgreSQL hostname")
     psql_to_csv_parser.add_argument("-d", "--database", required=True, help="PostgreSQL database name")
     psql_to_csv_parser.add_argument("-u", "--username", required=True, help="PostgreSQL username")
     psql_to_csv_parser.add_argument("-p", "--password", required=True, help="PostgreSQL password")
     psql_to_csv_parser.add_argument("-o", "--output", required=True, help="Output path for .csv files")
-    psql_to_csv_parser.set_defaults(func=convert_psql_to_csv)
+    psql_to_csv_parser.set_defaults(func=handle_convert_psql_to_csv)
 
     args = parser.parse_args()
     if 'func' not in args:
         parser.print_help()
     else:
         args.func(args)
-
-    # Get the invoked subcommand's title
-    # if args.subcommand:
-    #     print(f'Invoked subcommand: {args.subcommand}')
-    # else:
-    #     print('No subcommand invoked')
-
-    # if 'func' not in args:
-    #     # parser.print_help()
-    #      print_rich_help({
-    #         "db": "Database operations",
-    #         "migrate": "Migration operations"
-    #     }, "SmartAdvocate Migration CLI")
-    # else:
-    #     # args.func(args)
-    #     execute_with_logging(args.func, args)
-
-
-    # if 'func' not in args:
-    #     parser.print_help()
-    # else:
-    #     if args.func == exec and args.all:
-    #         # If --all is used, sequence is not required
-    #         args.seq = None
-    #     elif args.func == exec and args.seq is None:
-    #         # If sequence is not provided and --all is not used
-    #         parser.error("The 'exec' command requires the 'seq' argument unless '--all' is specified.")
 
 if __name__ == "__main__":
     main()

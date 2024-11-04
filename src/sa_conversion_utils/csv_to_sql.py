@@ -1,79 +1,69 @@
 # External
 import os
+import re
+import csv
+from datetime import datetime
 import pandas as pd
 from sqlalchemy import create_engine
-# https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
+from rich.table import Table
 
-# Lib
-# Relative import for package context
+# Internal imports
 try:
 	from .utilities.count_lines import count_lines_mmap
 	from .utilities.detect_encoding import detect_encoding
-# Absolute import for standalone context
+	from .utilities.logger import log_message
+	from .db_utils import backup_db
 except ImportError:
+	# Absolute import for standalone context
 	from sa_conversion_utils.utilities.count_lines import count_lines_mmap
 	from sa_conversion_utils.utilities.detect_encoding import detect_encoding
-
-
-# step 1 = process
-#	just wraps convert with a Rich progress bar
-# 	progress bar can be refactored into main()
-# step 2 - convert	
-#	reads the csv file into a dataframe and attempts to write to sql
-
+	from sa_conversion_utils.utilities.logger import log_message
+	from sa_conversion_utils.db_utils import backup_db
 
 console = Console()
 encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
 
-def read_csv_with_fallback(file_path):
-	# print(file_path)
-	# for encoding in encodings:
-	# 	try:
-	# 		df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
-	# 		return df, encoding
-	# 	except (UnicodeDecodeError, pd.errors.ParserError) as e:
-	# 		console.print(f"[yellow]Encoding error {file_path} with {encoding}. Error: {e}")
-	# 		continue
-	# raise ValueError(f"Unable to read the file {file_path} with known encodings.")
+def replace_newlines_with_pipe(df):
+    # Apply replacement for all string columns in the DataFrame using map on each column
+    return df.apply(lambda col: col.map(lambda x: re.sub(r'\r\n|\n', '|', x) if isinstance(x, str) else x))
 
+def read_csv_with_fallback(file_path):
 	detected_encoding = detect_encoding(file_path)
 	all_encodings = [detected_encoding] + encodings
 
 	for encoding in all_encodings:
 		try:
-			df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
-			# console.print(f"[green]Successfully read {os.path.basename(file_path)} with encoding: {encoding}")
-			return df, encoding
+			# Detect delimiter from the first line with the given encoding
+			with open(file_path, 'r', encoding=encoding) as file:
+				sample = file.readline()
+				sniffer = csv.Sniffer()
+				try:
+					dialect = sniffer.sniff(sample)
+					delimiter = dialect.delimiter
+				except csv.Error:
+					delimiter = ','  # Default to comma if detection fails
+				# console.print(f"[blue]Detected delimiter '{delimiter}' for {os.path.basename(file_path)}")
+
+			# Read the file into DataFrame with detected settings
+			df = pd.read_csv(file_path, encoding=encoding, delimiter=delimiter, low_memory=False)
+			return df, encoding, delimiter
+
 		except (UnicodeDecodeError, pd.errors.ParserError) as e:
 			console.print(f"[yellow]Error reading {os.path.basename(file_path)} with encoding {encoding}: {e}")
-    
+
 	raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
 
-	# for encoding in encodings:
-	# 	try:
-	# 		df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
-	# 		return df, encoding
-	# 	except (UnicodeDecodeError, pd.errors.ParserError) as e:
-	# 		console.print(f"[yellow]Encoding error:\nFile: {os.path.basename(file_path)}\nEncoding: {encoding}\nError: {e}")
-	# 		continue
-    
-	# # console.print(f"[blue]Using detected encoding: {detected_encoding} for file {file_path}")
-    
-	# try:
-	# 	df = pd.read_csv(file_path, encoding=detected_encoding, low_memory=False)
-	# 	return df, detected_encoding
-	# except Exception as e:
-	# 	raise ValueError(f"Unable to read the file {file_path} even with detected encoding: {detected_encoding}. Error: {e}")
-
-def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size):
+def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file):
 	file_name = os.path.basename(file_path)
-	# chunk_size = 2000
-	df, encoding = read_csv_with_fallback(file_path)
-	# print(len(df), chunk_size)
+	df, encoding, delimiter = read_csv_with_fallback(file_path)
+	df = replace_newlines_with_pipe(df)
 	line_count = count_lines_mmap(file_path)
+
+	start_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+	log_message(log_file, f"Begin import: {start_time}")
 
 	if not df.empty:
 		for i, chunk in enumerate(range(0, len(df), chunk_size)):
@@ -88,45 +78,29 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 				progress.update(file_task, advance=len(df_chunk))
 			except TypeError as e:
 				progress.console.print(f"[red]Type Error during import of chunk {i} for {file_name}. Error: {e}")
+				log_message(log_file, f"FAIL: {file_name} | {encoding} | Error during import of chunk {i}: {e}")
 				raise
 			except ValueError as e:
 				progress.console.print(f"[red]Value Error during import of chunk {i} for {file_name}. Error: {e}")
+				log_message(log_file, f"FAIL: {file_name} | {encoding} | Value Error during import of chunk {i}. Error: {e}")
 				raise
 			except Exception as e:
 				progress.console.print(f"[red]General Exception during import of chunk {i} for {file_name}. Error: {e}")
+				log_message(log_file, f"FAIL: {file_name} | {encoding} | General Exception during import of chunk {i}. Error: {e}")
 				raise
 				
 		progress.console.print(f"[green]PASS: {file_name}")
+		log_message(log_file, f"PASS: {file_name} | {encoding}")
+
 	else:
 		progress.console.print(f"[yellow]SKIP: {file_name} is empty.")
+		log_message(log_file, f"S: {file_name} | {encoding} | empty file")
 
     # Explicitly mark file task as complete
 	progress.update(file_task, completed=line_count)
 	progress.update(overall_task, advance=1)
 	progress.remove_task(file_task)
 
-def process(engine, csv_files, table_name_options, chunk_size):
-	# print(csv_files, 'process')
-	with Progress(
-		SpinnerColumn(),
-		TextColumn("[progress.description]{task.description}"),
-		BarColumn(),
-		TaskProgressColumn(),
-		"•",
-		TimeElapsedColumn(),
-		"•",
-		TextColumn("{task.completed:,}/{task.total:,}"),
-		TextColumn(f"Chunk size: {chunk_size:,} rows"),
-		console=console
-	) as progress:
-		overall_task = progress.add_task("[cyan]Importing CSV files", total=len(csv_files))
-
-		for csv_file in csv_files:
-			line_count = count_lines_mmap(csv_file)
-			file_task = progress.add_task(f"Importing {os.path.basename(csv_file)}", total=line_count)
-			table_name = table_name_options or os.path.splitext(os.path.basename(csv_file))[0]
-
-			convert(engine, csv_file, table_name, progress, overall_task, file_task, chunk_size)
 
 def main(options):
 	server = options.get('server')
@@ -137,30 +111,79 @@ def main(options):
 	conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
 	engine = create_engine(conn_str)
 
-	csv_files = []
+	data_files = []
+	file_summary = {}
 
-    # If input_path is a directory
+	# Collect data files for import
 	if os.path.isdir(input_path):
-		if Confirm.ask(f'Import all .csv files within directory [bold green]{input_path}[/bold green]?'):
-			csv_files = [os.path.join(input_path, f) for f in os.listdir(input_path) if f.endswith('.csv')]
-			if not csv_files:
-				console.print(f"[yellow]No CSV files found in the directory: {input_path}")
-				return
-    # If input_path is a file
+		data_files = [
+			os.path.join(input_path, f) for f in os.listdir(input_path)
+			if f.endswith(('.csv', '.txt')) and f != 'import_log.txt'
+		]
+		if not data_files:
+			console.print(f"[yellow]No CSV or TXT files found in the directory: {input_path}")
+			return
 	elif os.path.isfile(input_path):
-		if input_path.endswith('.csv'):	
-			if Confirm.ask(f'Import {os.path.basename(input_path)}?'):
-				csv_files = [input_path]  # Treat it as a single-file list for consistency
-			else:
-				console.print(f"[yellow]The specified file is not a CSV: {input_path}")
-				return
+		if input_path.endswith(('.csv', '.txt')):
+			data_files = [input_path]
+		else:
+			console.print(f"[yellow]The specified file is not a CSV or TXT: {input_path}")
+			return
 	else:
 		console.print(f"[red]Invalid input path: {input_path}")
 		return
 
-	if csv_files:
-		# print(csv_files, 'main')
-		process(engine, csv_files, table_name_options, chunk_size)
+	# Create file summary without reading
+	for data_file in data_files:
+		file_type = os.path.splitext(data_file)[1]
+		if file_type not in file_summary:
+			file_summary[file_type] = 0
+		file_summary[file_type] += 1
+
+	# Display summary table
+	summary_table = Table(title="File Import Summary")
+	summary_table.add_column("File Type", style="cyan", justify="left")
+	summary_table.add_column("Count", style="green", justify="right")
+
+	for file_type, count in file_summary.items():
+		summary_table.add_row(file_type, str(count))
+
+	console.print(summary_table)
+
+    # Confirm import for all files in summary
+	if Confirm.ask(f"Import all files to [bold cyan]{server}.{database}[/bold cyan]"):
+		with Progress(
+			SpinnerColumn(),
+			TextColumn("[progress.description]{task.description}"),
+			BarColumn(),
+			TaskProgressColumn(),
+			"•",
+			TimeElapsedColumn(),
+			"•",
+			TextColumn("{task.completed:,}/{task.total:,}"),
+			TextColumn(f"Chunk size: {chunk_size:,} rows"),
+			console=console
+		) as progress:
+			overall_task = progress.add_task("[cyan]Importing data files", total=len(data_files))
+			log_file = os.path.join(input_path, 'import_log.txt')
+
+			for data_file in data_files:
+				line_count = count_lines_mmap(data_file)
+				file_task = progress.add_task(f"Importing {os.path.basename(data_file)}", total=line_count)
+				table_name = table_name_options or os.path.splitext(os.path.basename(data_file))[0]
+
+                # Start conversion
+				convert(engine, data_file, table_name, progress, overall_task, file_task, chunk_size, log_file)
+
+	if data_files.len > 0:
+		if Confirm.ask("Import completed. Backup database?"):
+			backup_options = {
+				'server': server,
+				'database': database,
+				'output': input_path,
+				# 'message': message  # Can be None if not provided
+			}
+			backup_db(backup_options)
 
 if __name__ == "__main__":
     options = {
