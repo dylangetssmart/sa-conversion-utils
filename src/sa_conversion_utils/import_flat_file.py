@@ -57,13 +57,15 @@ def read_csv_with_fallback(file_path):
 	raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
 
 def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file):
+	# print(log_file)
 	file_name = os.path.basename(file_path)
 	df, encoding, delimiter = read_csv_with_fallback(file_path)
 	df = replace_newlines_with_pipe(df)
 	line_count = count_lines_mmap(file_path)
 
-	start_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-	log_message(log_file, f"Begin import: {start_time}")
+	if log_file:
+		start_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+		log_message(log_file, f"Begin import: {start_time}")
 
 	if not df.empty:
 		for i, chunk in enumerate(range(0, len(df), chunk_size)):
@@ -78,23 +80,27 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 				progress.update(file_task, advance=len(df_chunk))
 			except TypeError as e:
 				progress.console.print(f"[red]Type Error during import of chunk {i} for {file_name}. Error: {e}")
-				log_message(log_file, f"FAIL: {file_name} | {encoding} | Error during import of chunk {i}: {e}")
-				raise
+				if log_file:
+					log_message(log_file, f"FAIL: {file_name} | {encoding} | Error during import of chunk {i}: {e}")
 			except ValueError as e:
 				progress.console.print(f"[red]Value Error during import of chunk {i} for {file_name}. Error: {e}")
-				log_message(log_file, f"FAIL: {file_name} | {encoding} | Value Error during import of chunk {i}. Error: {e}")
+				if log_file:
+					log_message(log_file, f"FAIL: {file_name} | {encoding} | Value Error during import of chunk {i}. Error: {e}")
 				raise
 			except Exception as e:
 				progress.console.print(f"[red]General Exception during import of chunk {i} for {file_name}. Error: {e}")
-				log_message(log_file, f"FAIL: {file_name} | {encoding} | General Exception during import of chunk {i}. Error: {e}")
+				if log_file:
+					log_message(log_file, f"FAIL: {file_name} | {encoding} | General Exception during import of chunk {i}. Error: {e}")
 				raise
 				
 		progress.console.print(f"[green]PASS: {file_name}")
-		log_message(log_file, f"PASS: {file_name} | {encoding}")
+		if log_file:
+			log_message(log_file, f"PASS: {file_name} | {encoding}")
 
 	else:
 		progress.console.print(f"[yellow]SKIP: {file_name} is empty.")
-		log_message(log_file, f"S: {file_name} | {encoding} | empty file")
+		if log_file:
+			log_message(log_file, f"S: {file_name} | {encoding} | empty file")
 
     # Explicitly mark file task as complete
 	progress.update(file_task, completed=line_count)
@@ -152,6 +158,10 @@ def main(options):
 
     # Confirm import for all files in summary
 	if Confirm.ask(f"Import all files to [bold cyan]{server}.{database}[/bold cyan]"):
+		log_file = None
+		if Confirm.ask("Do you want to output a log file?"):
+			log_file = os.path.join(input_path, 'import_log.txt')
+
 		with Progress(
 			SpinnerColumn(),
 			TextColumn("[progress.description]{task.description}"),
@@ -165,7 +175,7 @@ def main(options):
 			console=console
 		) as progress:
 			overall_task = progress.add_task("[cyan]Importing data files", total=len(data_files))
-			log_file = os.path.join(input_path, 'import_log.txt')
+			# log_file = os.path.join(input_path, 'import_log.txt')
 
 			for data_file in data_files:
 				line_count = count_lines_mmap(data_file)
@@ -175,7 +185,7 @@ def main(options):
                 # Start conversion
 				convert(engine, data_file, table_name, progress, overall_task, file_task, chunk_size, log_file)
 
-	if data_files.len > 0:
+	if len(data_files) > 0:
 		if Confirm.ask("Import completed. Backup database?"):
 			backup_options = {
 				'server': server,

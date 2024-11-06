@@ -92,15 +92,16 @@ def run(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
-        # 'sequence': args.seq,
-        'series': args.series,
+        'folder': args.folder,
         'backup': args.backup,
-        'run_all': args.all,
-        'init': args.init,
-        'map': args.map,
-        'post': args.post,
         'skip': args.skip,
         'debug': args.debug
+        # 'sequence': args.seq,
+        # 'series': args.series,
+        # 'run_all': args.all,
+        # 'init': args.init,
+        # 'map': args.map,
+        # 'post': args.post,
     }
     exec_conv(options)
 
@@ -135,7 +136,7 @@ def encrypt(args):
 def handle_import_flat_file(args):
     options = {
         'server': args.server or SERVER,
-        'database': args.database,
+        'database': args.database or SA_DB,
         'input_path': args.input,
         # 'table': args.table,
         'chunk_size': args.chunk
