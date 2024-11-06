@@ -13,7 +13,7 @@ from rich.prompt import Confirm, Prompt
 from sa_conversion_utils.db_utils import restore_db, backup_db, create_db
 from sa_conversion_utils.run import exec_conv
 from sa_conversion_utils.mapping import generate_mapping
-from sa_conversion_utils.csv_to_sql import main as convert_csv_to_sql
+from sa_conversion_utils.import_flat_file import main as import_flat_file
 from sa_conversion_utils.psql_to_csv import main as convert_psql_to_csv
 from .utilities.migration_logger import log_migration_step
 
@@ -132,7 +132,7 @@ def encrypt(args):
     except Exception as e:
         print(f"An error occurred while running SSN encryption: {str(e)}")
 
-def handle_convert_csv_to_sql(args):
+def handle_import_flat_file(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database,
@@ -140,7 +140,7 @@ def handle_convert_csv_to_sql(args):
         # 'table': args.table,
         'chunk_size': args.chunk
     }
-    convert_csv_to_sql(options)
+    import_flat_file(options)
 
 def handle_convert_psql_to_csv(args):  
     options = {
@@ -160,6 +160,7 @@ def main():
         # help='sub-command help'
     )
 
+    # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: backup
     backup_parser = subparsers.add_parser('backup', help='Backup database')
     backup_parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
@@ -168,6 +169,7 @@ def main():
     backup_parser.add_argument('-m', '--message', help='Optional message to include in the filename', metavar='')
     backup_parser.set_defaults(func=backup)
 
+    # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: restore
     restore_parser = subparsers.add_parser('restore', help='Restore database')
     restore_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
@@ -175,6 +177,7 @@ def main():
     restore_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
     restore_parser.set_defaults(func=restore)
 
+    # --------------------------------------------------------------------------------------------------------------------------------------------- 
     # Command: map
     mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
     mapping_parser.add_argument('system', nargs='?',help='SQL Script sequence to execute.', choices=['needles'], type=str)
@@ -182,39 +185,48 @@ def main():
     mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     mapping_parser.set_defaults(func=map)
 
+    # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: run
     run_parser = subparsers.add_parser('run', help='Run SQL scripts')
-    run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Select the script series to execute.')
+    # run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Select the script series to execute.')
+    run_parser.add_argument('folder', choices=['map', 'conv', 'post'], help='The folder of sql scripts to run')
     run_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     run_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup SA database after script execution.')
-    run_parser.add_argument('-a', '--all', action='store_true', help='Run all sql scripts.')
-    run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
-    run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
-    run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')
+    # run_parser.add_argument('-a', '--all', action='store_true', help='Run all sql scripts.')
+    # run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
+    # run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
+    # run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')
     run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename.')
     run_parser.add_argument('--debug', action='store_true', help='Enable skipping scripts with "skip" in the filename.')
     run_parser.set_defaults(func=run)
     
+    # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: encrypt
     encrypt_parser = subparsers.add_parser('encrypt', help='Run SSN Encryption')
     encrypt_parser.set_defaults(func=encrypt)
 
-    # Command: convert
-    convert_parser = subparsers.add_parser("convert", help="Convert data from one type to another, such as .csv to sql")
-    convert_subparsers = convert_parser.add_subparsers(title="Convert Variants", dest="convert_variant")
+    # ---------------------------------------------------------------------------------------------------------------------------------------------
+    # Command: import
+    import_parser = subparsers.add_parser("import", help="Import data into SQL")
+    import_subparsers = import_parser.add_subparsers(title="Convert Variants", dest="convert_variant")
 
-    # Subcommand: convert csv-to-sql
-    csv_to_sql_parser = convert_subparsers.add_parser("csv-sql", help="Convert CSV to SQL")
-    csv_to_sql_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
-    csv_to_sql_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env.', metavar='')
-    csv_to_sql_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
-    # csv_to_sql_parser.add_argument("-t", "--table", help="Table name in the database")
-    csv_to_sql_parser.add_argument("-c", "--chunk", type=int, default=2000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
-    csv_to_sql_parser.set_defaults(func=handle_convert_csv_to_sql)
+    # Subcommand: flat file
+    flat_file_parser = import_subparsers.add_parser("flat-file", help="Import data from flat files to SQL")
+    flat_file_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
+    flat_file_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env.', metavar='')
+    flat_file_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
+    # flat_file_parser.add_argument("-t", "--table", help="Table name in the database")
+    flat_file_parser.add_argument("-c", "--chunk", type=int, default=2000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
+    flat_file_parser.set_defaults(func=handle_import_flat_file)
+
+    # ---------------------------------------------------------------------------------------------------------------------------------------------
+    # Command: export
+    export_parser = subparsers.add_parser("export", help="Convert data from one type to another, such as .csv to sql")
+    export_subparsers = export_parser.add_subparsers(title="Convert Variants", dest="convert_variant")
 
     # Subcommand: convert psql-to-csv
-    psql_to_csv_parser = convert_subparsers.add_parser("psql-csv", help="Convert PostgreSQL to CSV")
+    psql_to_csv_parser = import_subparsers.add_parser("psql-csv", help="Convert PostgreSQL to CSV")
     psql_to_csv_parser.add_argument("-s", "--server", required=True, help="PostgreSQL hostname")
     psql_to_csv_parser.add_argument("-d", "--database", required=True, help="PostgreSQL database name")
     psql_to_csv_parser.add_argument("-u", "--username", required=True, help="PostgreSQL username")
