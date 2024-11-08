@@ -28,51 +28,40 @@ def backup_db(options):
     database = options.get('database')
     output_path = options.get('output')
     message = options.get('message')
-
+    
     if not server:
         raise ValueError("Missing SQL Server argument")
 
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
+    if Confirm.ask(f'Backup {server}.{database} to {output_path}'):
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
 
-    if message:
-        filename = f'{database}_{message}_{timestamp}.bak'
-    else:
-        filename = f'{database}_{timestamp}.bak'
+        if message:
+            filename = f'{database}_{message}_{timestamp}.bak'
+        else:
+            filename = f'{database}_{timestamp}.bak'
 
-    backup_path = os.path.join(output_path, filename)
+        backup_path = os.path.join(output_path, filename)
 
-    # Ensure the backup directory exists
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+        # Ensure the backup directory exists
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
 
-    backup_command = f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path}' WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
+        backup_command = f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path}' WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
 
-    try:
-        subprocess.run(backup_command, check=True, shell=True)
-        print(f"Backup for {database} completed successfully at {output_path}.")
-    except subprocess.CalledProcessError as error:
-        print(f"Error backing up database {database}:", error)
+        try:
+            subprocess.run(backup_command, check=True, shell=True)
+            print(f"Backup for {database} completed successfully at {output_path}.")
+        except subprocess.CalledProcessError as error:
+            print(f"Error backing up database {database}:", error)
 
 def restore_db(options):
     server = options.get('server')
     database = options.get('database')
-    virgin = options.get('virgin', False)
+    # virgin = options.get('virgin', False)
 
     # custom_message = f"restore database"
     # if not confirm_execution(server, database, custom_message):
     #     return
-
-    # Dynamic confirmation prompt
-    prompt_message = f"Are you sure you want to restore [magenta]{server}[/magenta].[cyan]{database}[/cyan]"
-    if virgin:
-        prompt_message += f" to a virgin state"
-    if not Confirm.ask(prompt_message):
-        return
-    
-    if virgin:
-        console.print(f"[yellow]Restoring {server}.{database} to virgin state")
-    else:
-        console.print(f"[yellow]Restoring {server}.{database}...")
 
     if not server:
         print("Missing server parameter.")
@@ -81,52 +70,53 @@ def restore_db(options):
     if not database:
         print("Missing database parameter.")
         return
-
-    if virgin:
-        backup_file = r"C:\LocalConv\_virgin\SADatabase\SADatabase\SAModel_backup_2024_07_25_010001_5737827.bak"
-    else:
-        # Prompt user to select .bak backup_file using backup_file dialog
+    
+    if Confirm.ask(f"Restore [magenta]{server}[/magenta].[cyan]{database}[/cyan]"):
+        # if virgin:
+        #     console.print(f"[yellow]Restoring {server}.{database} to virgin state")
+        # else:
+        #     console.print(f"[yellow]Restoring {server}.{database}...")
         console.print("[yellow]Select the .bak backup_file to restore:")
         backup_file = select_bak_backup_file()
 
         if not backup_file:
             print("No backup_file selected. Exiting script.")
             return
+        
+        print(f'Revert database: {server}.{database}')
 
-    print(f'Revert database: {server}.{database}')
+        # Put the database in single user mode
+        print(f"\nPutting database {database} in single user mode ...")
+        try:
+            subprocess.run(
+                ['sqlcmd', '-S', server, '-Q', f"ALTER database [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;", '-b', '-d', 'master'],
+                check=True
+            )
+        except subprocess.CalledProcessError:
+            print(f"Failed to set database {database} to single user mode. Exiting script.")
+            return
 
-    # Put the database in single user mode
-    print(f"\nPutting database {database} in single user mode ...")
-    try:
-        subprocess.run(
-            ['sqlcmd', '-S', server, '-Q', f"ALTER database [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;", '-b', '-d', 'master'],
-            check=True
-        )
-    except subprocess.CalledProcessError:
-        print(f"Failed to set database {database} to single user mode. Exiting script.")
-        return
+        # Restore the database
+        print(f"\nRestoring database {database} from {backup_file} ...")
+        try:
+            subprocess.run(
+                ['sqlcmd', '-S', server, '-Q', f"RESTORE database [{database}] FROM DISK='{backup_file}' WITH REPLACE, RECOVERY;", '-b', '-d', 'master'],
+                check=True
+            )
+            print(f"database {database} restored successfully from {backup_file}.")
+        except subprocess.CalledProcessError:
+            print("database restore failed. Check the SQL server error log for details.")
+            return
 
-    # Restore the database
-    print(f"\nRestoring database {database} from {backup_file} ...")
-    try:
-        subprocess.run(
-            ['sqlcmd', '-S', server, '-Q', f"RESTORE database [{database}] FROM DISK='{backup_file}' WITH REPLACE, RECOVERY;", '-b', '-d', 'master'],
-            check=True
-        )
-        print(f"database {database} restored successfully from {backup_file}.")
-    except subprocess.CalledProcessError:
-        print("database restore failed. Check the SQL server error log for details.")
-        return
-
-    # Set the database back to multi-user mode
-    print(f"\nPutting database {database} back in multi-user mode ...")
-    try:
-        subprocess.run(
-            ['sqlcmd', '-S', server, '-Q', f"ALTER database [{database}] SET MULTI_USER;", '-b', '-d', 'master'],
-            check=True
-        )
-    except subprocess.CalledProcessError:
-        print(f"Failed to set database {database} back to multi-user mode. Manual intervention may be required.")
+        # Set the database back to multi-user mode
+        print(f"\nPutting database {database} back in multi-user mode ...")
+        try:
+            subprocess.run(
+                ['sqlcmd', '-S', server, '-Q', f"ALTER database [{database}] SET MULTI_USER;", '-b', '-d', 'master'],
+                check=True
+            )
+        except subprocess.CalledProcessError:
+            print(f"Failed to set database {database} back to multi-user mode. Manual intervention may be required.")
 
 def create_db(options):
     server = options.get('server')

@@ -18,35 +18,11 @@ def exec_conv(options):
     server = options.get('server')
     database = options.get('database')
     folder = options.get('folder')
-    # series = options.get('series')
     backup = options.get('backup', False)
-    # run_all = options.get('run_all', False)
-    # init = options.get('init', False)
-    # map = options.get('map', False)
-    # post = options.get('post', False)
     skip = options.get('skip', False)
     debug = options.get('debug', False)
 
-    # print(options)
-
     sql_dir = os.path.join(SQL_DIR, folder)
-
-    # try:
-    #     if init:
-    #         sql_dir = os.path.join(SQL_DIR, 'init')
-    #         script_type = 'init'
-    #     elif map:
-    #         sql_dir = os.path.join(SQL_DIR, 'map')
-    #         script_type = 'map'
-    #     elif post:
-    #         sql_dir = os.path.join(SQL_DIR, 'post')
-    #         script_type = 'post'
-    #     else:
-    #         sql_dir = os.path.join(SQL_DIR, 'conv')
-    #         script_type = 'conv'
-    # except Exception as e:
-    #     console.print(f'Error setting SQL directory: {str(e)}', style="bold red")
-    #     return
 
     # Get list of SQL files
     try:
@@ -57,7 +33,7 @@ def exec_conv(options):
             scripts = [file for file in scripts if 'skip' not in file.lower()]
 
         if not scripts:
-            console.print(f'No scripts found for the specified pattern.', style="bold yellow")
+            console.print(f'No sql scripts found.', style="bold yellow")
             return
     except Exception as e:
         console.print(f'Error reading SQL scripts: {str(e)}', style="bold red")
@@ -78,8 +54,6 @@ def exec_conv(options):
             ) as progress:
                 task = progress.add_task(f"[cyan]Executing SQL Scripts", total=len(scripts))
                 for file in scripts:
-                    # if not Confirm.ask("exit?"):
-                    #     return
                     script_task = progress.add_task(f"[yellow]Running {file}")
                     sql_runner(
                         os.path.join(sql_dir, file),
@@ -90,7 +64,7 @@ def exec_conv(options):
                     )
                     progress.update(task, advance=1)
                     
-                    if debug and not Confirm.ask("[bold red]Debug mode is active. Do you want to continue?[/bold red]"):
+                    if debug and not Confirm.ask("[bold red]DEBUG MODE is active. Do you want to Continue?[/bold red]"):
                         console.print("Exiting", style="bold yellow")
                         return
                     
