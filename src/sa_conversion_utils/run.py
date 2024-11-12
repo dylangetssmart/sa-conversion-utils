@@ -17,12 +17,30 @@ console = Console()
 def exec_conv(options):
     server = options.get('server')
     database = options.get('database')
-    folder = options.get('folder')
+    phase = options.get('phase')
+    group = options.get('group')
     backup = options.get('backup', False)
     skip = options.get('skip', False)
     debug = options.get('debug', False)
+    run_all = options.get('all', False)
 
-    sql_dir = os.path.join(SQL_DIR, folder)
+    available_groups = ['config', 'contact', 'case', 'udf', 'misc', 'intake']
+
+    if phase == 'conv':
+        if run_all:
+            groups_to_run = available_groups
+        elif group:
+            groups_to_run = [group]
+        else:
+            console.print("[bold red]Error: You must specify a group or use '--all' when phase is 'conv'.[/bold red]")
+            return
+    else:
+        groups_to_run = [None]
+
+    for grp in groups_to_run:
+        # Construct the SQL directory path using phase and group
+        sql_dir = os.path.join(SQL_DIR, phase, grp) if grp else os.path.join(SQL_DIR, phase)
+        # console.print(f"Using SQL directory: [bold blue]{sql_dir}[/bold blue]")
 
     # Get list of SQL files
     try:
@@ -40,7 +58,7 @@ def exec_conv(options):
         return
 
     try:
-        if Confirm.ask(f"Run SQL scripts in [bold blue]{SQL_DIR}\\{folder}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
+        if Confirm.ask(f"Run SQL scripts in [bold blue]{sql_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
@@ -64,29 +82,34 @@ def exec_conv(options):
                     )
                     progress.update(task, advance=1)
                     
-                    if debug and not Confirm.ask("[bold red]DEBUG MODE is active. Do you want to Continue?[/bold red]"):
-                        console.print("Exiting", style="bold yellow")
-                        return
+                    if debug:
+                        progress.stop()
+                        if not Confirm.ask("[yellow]DEBUG MODE is active. Do you want to continue?[/yellow]"):
+                            console.print("Exiting", style="bold red")
+                            return
+                        progress.start()
                     
-        # Backup process
-        try:
-            if backup:
-                backup_db({
-                    'database': database,
-                    'output': os.path.join(BASE_DIR, 'backups'),
-                    'server': server,
-                    'message': 'AutoBackupAfterRun'
-                })
-            else:
-                if Confirm.ask("SQL scripts completed. Backup database?"):
+            # Backup process
+            try:
+                if backup:
                     backup_db({
                         'database': database,
                         'output': os.path.join(BASE_DIR, 'backups'),
                         'server': server,
-                        'message': 'AutoBackupAfterRun'
+                        'phase': phase,
+                        'group': group
                     })
-        except Exception as e:
-            console.print(f'Error during backup: {str(e)}', style="bold red")
+                else:
+                    if Confirm.ask("SQL scripts completed. Backup database?"):
+                        backup_db({
+                            'database': database,
+                            'output': os.path.join(BASE_DIR, 'backups'),
+                            'server': server,
+                            'phase': phase,
+                            'group': group
+                        })
+            except Exception as e:
+                console.print(f'Error during backup: {str(e)}', style="bold red")
 
     except Exception as e:
         console.print(f'Error during SQL script execution: {str(e)}', style="bold red")

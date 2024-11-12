@@ -1,4 +1,5 @@
 # External
+import sys
 import os
 import argparse
 from importlib.resources import files
@@ -92,7 +93,8 @@ def run(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
-        'folder': args.folder,
+        'phase': args.phase,
+        'group': args.group,
         'backup': args.backup,
         'skip': args.skip,
         'debug': args.debug
@@ -153,6 +155,12 @@ def handle_convert_psql_to_csv(args):
     }
     convert_psql_to_csv(options)
 
+def validate_args(args):
+    # Make `group` required only if `phase` is 'conv'
+    if args.phase == 'conv' and not args.group:
+        print("error: the following argument is required for 'conv' phase: group")
+        sys.exit(1)
+
 def main():
     parser = argparse.ArgumentParser(description='SmartAdvocate Data Conversion CLI.')
     subparsers = parser.add_subparsers(
@@ -189,17 +197,31 @@ def main():
     # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: run
     run_parser = subparsers.add_parser('run', help='Run SQL scripts')
+    # Arguments ---------------
+    run_parser.add_argument(
+        'phase',
+        choices=['map', 'conv', 'post'],
+        metavar='phase',
+        help='The phase of SQL scripts to run: {map, conv, post}'
+    )
+    run_parser.add_argument(
+        'group',
+        nargs='?',
+        choices=['config', 'contact', 'case', 'udf', 'misc', 'intake'],
+        metavar='group',
+        help='The specific group of scripts to run (required if phase = conv): {config, contact, case, udf, misc, intake}'
+    )
     # run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Select the script series to execute.')
-    run_parser.add_argument('folder', choices=['map', 'conv', 'post'], help='The folder of sql scripts to run')
-    run_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    run_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
-    run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup SA database after script execution.')
-    # run_parser.add_argument('-a', '--all', action='store_true', help='Run all sql scripts.')
+    # Flags -------------------
+    run_parser.add_argument('-s','--server', help='SQL Server. If omitted, defaults to SERVER from .env', metavar='')
+    run_parser.add_argument('-d', '--database', help='Database. If omitted, defaults to SA_DB from .env', metavar='')
+    run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup database after script execution')
+    run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
+    run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
+    run_parser.add_argument('--all', action='store_true', help='Run all groups in the "conv" phase')
     # run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
     # run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
     # run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')
-    run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename.')
-    run_parser.add_argument('--debug', action='store_true', help='Enable skipping scripts with "skip" in the filename.')
     run_parser.set_defaults(func=run)
     
     # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -236,6 +258,11 @@ def main():
     psql_to_csv_parser.set_defaults(func=handle_convert_psql_to_csv)
 
     args = parser.parse_args()
+
+    # Validate arguments
+    if args.subcommand == 'run':
+        validate_args(args)
+
     if 'func' not in args:
         parser.print_help()
     else:

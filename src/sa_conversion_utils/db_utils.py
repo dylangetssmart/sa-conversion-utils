@@ -9,6 +9,31 @@ from rich.prompt import Confirm
 
 console = Console()
 
+def find_backup_file(database, phase=None, group=None, backup_dir='backups'):
+    """
+    Finds the most recent backup file based on the database, phase, and group.
+    """
+    # Generate the expected filename pattern
+    pattern = f"{database}_{phase or '*'}_{group or '*'}_*.bak"
+    backup_dir = os.path.join(os.getcwd(), backup_dir)
+    
+    # List all matching files in the backup directory
+    matching_files = [
+        f for f in os.listdir(backup_dir)
+        if os.path.isfile(os.path.join(backup_dir, f)) and f.startswith(f"{database}_") and f.endswith(".bak")
+    ]
+    
+    # Filter files based on the pattern
+    filtered_files = [f for f in matching_files if f.startswith(f"{database}_{phase or ''}_{group or ''}")]
+    
+    # If exact match found, return the latest one based on date in the filename
+    if filtered_files:
+        filtered_files.sort(reverse=True)  # Sort files by latest date
+        return os.path.join(backup_dir, filtered_files[0])
+    
+    # If no files match, return None
+    return None
+
 def select_bak_backup_file():
     root = tk.Tk()
     root.withdraw()
@@ -27,41 +52,49 @@ def backup_db(options):
     server = options.get('server')
     database = options.get('database')
     output_path = options.get('output')
-    message = options.get('message')
-    
+    # message = options.get('message')
+    phase = options.get('phase')
+    group = options.get('group')
+
     if not server:
         raise ValueError("Missing SQL Server argument")
+    if not database:
+        raise ValueError("Missing database argument")
 
-    if Confirm.ask(f'Backup {server}.{database} to {output_path}'):
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
+    # Create the backup filename
+    timestamp = datetime.now().strftime('%Y-%m-%d')
+    if phase and group:
+        filename = f"{database}_{phase}_{group}_{timestamp}.bak"
+    elif phase:
+        filename = f"{database}_{phase}_{timestamp}.bak"
+    else:
+        filename = f"{database}_{timestamp}.bak"
 
-        if message:
-            filename = f'{database}_{message}_{timestamp}.bak'
-        else:
-            filename = f'{database}_{timestamp}.bak'
+    backup_path = os.path.join(output_path, filename)
 
-        backup_path = os.path.join(output_path, filename)
+    # Ensure the backup directory exists
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
-        # Ensure the backup directory exists
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-
-        backup_command = f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path}' WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
+    # Confirm the backup operation
+    if Confirm.ask(f'Backup {server}.{database} to {backup_path}?'):
+        backup_command = (
+            f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path}' "
+            f"WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
+        )
 
         try:
             subprocess.run(backup_command, check=True, shell=True)
-            print(f"Backup for {database} completed successfully at {output_path}.")
+            console.print(f"[green]Backup for {database} completed successfully at {backup_path}.")
         except subprocess.CalledProcessError as error:
-            print(f"Error backing up database {database}:", error)
+            console.print(f"[red]Error backing up database {database}: {error}")
 
 def restore_db(options):
     server = options.get('server')
     database = options.get('database')
-    # virgin = options.get('virgin', False)
-
-    # custom_message = f"restore database"
-    # if not confirm_execution(server, database, custom_message):
-    #     return
+    phase = options.get('phase')
+    group = options.get('group')
+    backup_dir = options.get('backup_dir', 'backups')
 
     if not server:
         print("Missing server parameter.")
@@ -70,26 +103,32 @@ def restore_db(options):
     if not database:
         print("Missing database parameter.")
         return
-    
-    if Confirm.ask(f"Restore [magenta]{server}[/magenta].[cyan]{database}[/cyan]"):
-        # if virgin:
-        #     console.print(f"[yellow]Restoring {server}.{database} to virgin state")
-        # else:
-        #     console.print(f"[yellow]Restoring {server}.{database}...")
-        console.print("[yellow]Select the .bak backup_file to restore:")
+
+    console.status(
+        f"[yellow]Looking for backup file for database: {database}, phase: {phase}, group: {group}...[/yellow]"
+        )
+
+    # Find the backup file based on provided options
+    backup_file = find_backup_file(database, phase, group, backup_dir)
+
+    if not backup_file:
+        console.print("[yellow]No backup file found matching the specified criteria. Please select the .bak backup file manually.[/yellow]")
         backup_file = select_bak_backup_file()
 
         if not backup_file:
-            print("No backup_file selected. Exiting script.")
+            console.print("[red]No backup file selected. Exiting[/red]")
             return
-        
-        print(f'Revert database: {server}.{database}')
+
+    console.print(f"[green]Backup file found: {backup_file}[/green]")
+
+    if Confirm.ask(f"Restore [magenta]{server}[/magenta].[cyan]{database}[/cyan] using [yellow]{backup_file}[/yellow]?"):
+        print(f'Reverting database: {server}.{database}')
 
         # Put the database in single user mode
         print(f"\nPutting database {database} in single user mode ...")
         try:
             subprocess.run(
-                ['sqlcmd', '-S', server, '-Q', f"ALTER database [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;", '-b', '-d', 'master'],
+                ['sqlcmd', '-S', server, '-Q', f"ALTER DATABASE [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;", '-b', '-d', 'master'],
                 check=True
             )
         except subprocess.CalledProcessError:
@@ -100,23 +139,25 @@ def restore_db(options):
         print(f"\nRestoring database {database} from {backup_file} ...")
         try:
             subprocess.run(
-                ['sqlcmd', '-S', server, '-Q', f"RESTORE database [{database}] FROM DISK='{backup_file}' WITH REPLACE, RECOVERY;", '-b', '-d', 'master'],
+                ['sqlcmd', '-S', server, '-Q', f"RESTORE DATABASE [{database}] FROM DISK='{backup_file}' WITH REPLACE, RECOVERY;", '-b', '-d', 'master'],
                 check=True
             )
-            print(f"database {database} restored successfully from {backup_file}.")
+            print(f"Database {database} restored successfully from {backup_file}.")
         except subprocess.CalledProcessError:
-            print("database restore failed. Check the SQL server error log for details.")
+            print("Database restore failed. Check the SQL server error log for details.")
             return
 
         # Set the database back to multi-user mode
         print(f"\nPutting database {database} back in multi-user mode ...")
         try:
             subprocess.run(
-                ['sqlcmd', '-S', server, '-Q', f"ALTER database [{database}] SET MULTI_USER;", '-b', '-d', 'master'],
+                ['sqlcmd', '-S', server, '-Q', f"ALTER DATABASE [{database}] SET MULTI_USER;", '-b', '-d', 'master'],
                 check=True
             )
         except subprocess.CalledProcessError:
             print(f"Failed to set database {database} back to multi-user mode. Manual intervention may be required.")
+        finally:
+            console.print(f"[green]Restore operation completed for {server}.{database}[/green]")
 
 def create_db(options):
     server = options.get('server')
