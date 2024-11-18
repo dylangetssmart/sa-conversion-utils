@@ -3,7 +3,6 @@ import re
 import pandas as pd
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
-from .utilities.confirm import confirm_execution
 # Variables for database connection
 # db_server = "DYLANS"
 # db_name = "NeedlesSLF"
@@ -86,9 +85,9 @@ def generate_mapping(options):
     """
 
 
-    custom_message = f"generate mapping template"
-    if not confirm_execution(server, database, custom_message):
-        return
+    # custom_message = f"generate mapping template"
+    # if not confirm_execution(server, database, custom_message):
+    #     return
 
     # Create SQLAlchemy engine
     engine = create_engine(conn_str)

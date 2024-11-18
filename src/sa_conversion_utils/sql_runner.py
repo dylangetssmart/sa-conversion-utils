@@ -6,9 +6,7 @@ from .utilities.logger import log_message, log_error
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 
 BASE_DIR = os.getcwd()
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-# LOGS_DIR = os.path.join(BASE_DIR, '../logs')
 datetime_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
 LOG_FILE = os.path.join(LOGS_DIR, f'error_log_{datetime_str}.txt')
 
@@ -62,44 +60,19 @@ def sql_runner(script_path: str, server: str, database: str, script_task, progre
         log_script_result(script_name, f'Error Output:\n{error_output}', success=False)
 
         if progress:
-            progress.console.print(f"[red]FAIL: {script_name}")
+            progress.console.print(f"[red]ERR: {script_name}")
             progress.update(script_task)
             progress.remove_task(script_task)
         else:
-            print(f"[red]FAIL: {script_name}")
-
+            print(f"[red]ERR: {script_name}")
 
 # Main block
 if __name__ == "__main__":
-    # Example usage
     script_path = input("Enter the path to the SQL script: ")
     server = input("Enter the SQL Server name: ")
     database = input("Enter the database name: ")
-    script_task = None  # Set appropriate script task if needed
-    progress = None  # Set appropriate progress object if needed
+    script_task = None
+    progress = None
 
     # Call the function
     sql_runner(script_path, server, database, script_task, progress)
-
-    # with Progress(
-    #     SpinnerColumn(),
-    #     TextColumn("[progress.description]{task.description}"),
-    #     BarColumn(),
-    #     TaskProgressColumn(),
-    #     "•",
-    #     TimeElapsedColumn(),
-    #     "•",
-    #     TextColumn("{task.completed:,}/{task.total:,}"),
-    #     console=console
-    # ) as progress:
-    #     task = progress.add_task(f"[cyan]Executing SQL Scripts Sequence: {series}", total=len(scripts))
-    # for file in scripts:
-    # script_task = progress.add_task(f"[yellow]Running {file}")
-    # sql_runner(
-    # os.path.join(sql_dir, file),
-    # server,
-    # database,
-    # script_task,
-    # progress
-    # )
-    # progress.update(task, advance=1)

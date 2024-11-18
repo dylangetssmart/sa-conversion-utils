@@ -52,10 +52,8 @@ def backup_db(options):
     server = options.get('server')
     database = options.get('database')
     output_path = options.get('output')
-    # message = options.get('message')
-    phase = options.get('phase')
-    group = options.get('group')
-
+    message = options.get('message')
+    
     if not server:
         raise ValueError("Missing SQL Server argument")
     if not database:
@@ -63,10 +61,9 @@ def backup_db(options):
 
     # Create the backup filename
     timestamp = datetime.now().strftime('%Y-%m-%d')
-    if phase and group:
-        filename = f"{database}_{phase}_{group}_{timestamp}.bak"
-    elif phase:
-        filename = f"{database}_{phase}_{timestamp}.bak"
+
+    if message:
+        filename = f"{database}_{message}_{timestamp}.bak"
     else:
         filename = f"{database}_{timestamp}.bak"
 

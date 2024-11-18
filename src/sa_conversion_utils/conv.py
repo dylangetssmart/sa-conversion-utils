@@ -79,8 +79,9 @@ def backup(args):
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
         'output': args.output or os.path.join(os.getcwd(),'backups'),
-        'phase': args.phase,
-        'group': args.group
+        'message': args.message
+        # 'phase': args.phase,
+        # 'group': args.group
     }
     backup_db(options)
 
@@ -96,8 +97,8 @@ def run(args):
         'database': args.database or SA_DB,
         'username': args.username,
         'password': args.password,
-        'phase': args.phase,
-        'group': args.group,
+        # 'phase': args.phase,
+        # 'group': args.group,
         'backup': args.backup,
         'skip': args.skip,
         'debug': args.debug,
@@ -160,11 +161,11 @@ def handle_convert_psql_to_csv(args):
     }
     convert_psql_to_csv(options)
 
-def validate_args(args):
-    # Make `group` required only if `phase` is 'conv'
-    if args.phase == 'conv' and not args.group:
-        print("error: the following argument is required for 'conv' phase: group")
-        sys.exit(1)
+# def validate_args(args):
+#     # Make `group` required only if `phase` is 'conv'
+#     if args.phase == 'conv' and not args.group:
+#         print("error: the following argument is required for 'conv' phase: group")
+#         sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(description='SmartAdvocate Data Conversion CLI.')
@@ -213,35 +214,18 @@ def main():
     """
     run_parser = subparsers.add_parser('run', help='Run SQL scripts')
     # Arguments
-    run_parser.add_argument(
-        '-ph',
-        '--phase',
-        choices=['map', 'conv', 'post', 'test'],
-        metavar='phase',
-        help='The phase of SQL scripts to run: {map, conv, post}'
-    )
-    run_parser.add_argument(
-        '-gr',
-        '--group',
-        nargs='?',
-        choices=['config', 'contact', 'case', 'udf', 'misc', 'intake'],
-        metavar='group',
-        help='The specific group of scripts to run (required if phase = conv): {config, contact, case, udf, misc, intake}'
-    )
-    # run_parser.add_argument('-se', '--series', type=int, choices=range(0,10), help='Select the script series to execute.')
+    # run_parser.add_argument('-ph','--phase',choices=['map', 'conv', 'post', 'test'],metavar='phase',help='The phase of SQL scripts to run: {map, conv, post}')
+    # run_parser.add_argument('-gr','--group',nargs='?',choices=['config', 'contact', 'case', 'udf', 'misc', 'intake'],metavar='group',help='The specific group of scripts to run (required if phase = conv): {config, contact, case, udf, misc, intake}')
     # Flags -------------------
     run_parser.add_argument('-s','--server', help='SQL Server. If omitted, defaults to SERVER from .env', metavar='')
     run_parser.add_argument('-d', '--database', help='Database. If omitted, defaults to SA_DB from .env', metavar='')
     run_parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
     run_parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
+    run_parser.add_argument('-i', '--input', help='Input path of sql scripts')
     run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup database after script execution')
     run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
     run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
     run_parser.add_argument('--all', action='store_true', help='Run all groups in the "conv" phase')
-    run_parser.add_argument('--input', help='')
-    # run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
-    # run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
-    # run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')
     run_parser.set_defaults(func=run)
     
     # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -259,7 +243,6 @@ def main():
     flat_file_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
     flat_file_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env.', metavar='')
     flat_file_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
-    # flat_file_parser.add_argument("-t", "--table", help="Table name in the database")
     flat_file_parser.add_argument("-c", "--chunk", type=int, default=2000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
     flat_file_parser.set_defaults(func=handle_import_flat_file)
 
@@ -280,8 +263,8 @@ def main():
     args = parser.parse_args()
 
     # Validate arguments
-    if args.subcommand == 'run':
-        validate_args(args)
+    # if args.subcommand == 'run':
+    #     validate_args(args)
 
     if 'func' not in args:
         parser.print_help()
