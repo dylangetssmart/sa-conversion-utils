@@ -17,30 +17,58 @@ console = Console()
 def exec_conv(options):
     server = options.get('server')
     database = options.get('database')
+    username = options.get('username')
+    password = options.get('password')
     phase = options.get('phase')
     group = options.get('group')
+    input_dir = options.get('input')  # New input option
     backup = options.get('backup', False)
     skip = options.get('skip', False)
     debug = options.get('debug', False)
     run_all = options.get('all', False)
+    skip_confirm = options.get('skip_confirm', False)
 
-    available_groups = ['config', 'contact', 'case', 'udf', 'misc', 'intake']
+    # Map short group names to actual folder names
+    group_mapping = {
+        'config': '0_config',
+        'contact': '1_contact',
+        'case': '2_case',
+        'udf': '3_udf',
+        'misc': '4_misc',
+        'intake': '5_intake'
+    }
 
-    if phase == 'conv':
-        if run_all:
-            groups_to_run = available_groups
-        elif group:
-            groups_to_run = [group]
-        else:
-            console.print("[bold red]Error: You must specify a group or use '--all' when phase is 'conv'.[/bold red]")
-            return
+    available_groups = list(group_mapping.values())
+
+    # If input directory is specified, use it directly and skip phase/group logic
+    if input_dir:
+        sql_dir = os.path.join(BASE_DIR, input_dir)
+        console.print(f"[cyan]Using custom input directory: {sql_dir}[/cyan]")
+        groups_to_run = [None]  # Skip group processing
     else:
-        groups_to_run = [None]
+        if phase == 'conv':
+            if run_all:
+                groups_to_run = available_groups
+            elif group:
+                # Map user input to the correct folder name
+                mapped_group = group_mapping.get(group.lower())
+                if mapped_group:
+                    groups_to_run = [mapped_group]
+                else:
+                    console.print(f"[bold red]Error: Group '{group}' not found. Available groups are: {', '.join(group_mapping.keys())}[/bold red]")
+                    return
+            else:
+                console.print("[bold red]Error: You must specify a group or use '--all' when phase is 'conv'.[/bold red]")
+                return
+        else:
+            groups_to_run = [None]
 
-    for grp in groups_to_run:
-        # Construct the SQL directory path using phase and group
-        sql_dir = os.path.join(SQL_DIR, phase, grp) if grp else os.path.join(SQL_DIR, phase)
-        # console.print(f"Using SQL directory: [bold blue]{sql_dir}[/bold blue]")
+    # Process groups if no input directory is provided
+    if not input_dir:
+        for grp in groups_to_run:
+            # Construct the SQL directory path using phase and group
+            sql_dir = os.path.join(SQL_DIR, phase, grp) if grp else os.path.join(SQL_DIR, phase)
+            console.print(f"[cyan]Processing group: {grp} in directory: {sql_dir}[/cyan]")
 
     # Get list of SQL files
     try:
@@ -51,15 +79,19 @@ def exec_conv(options):
             scripts = [file for file in scripts if 'skip' not in file.lower()]
 
         if not scripts:
-            console.print(f'No sql scripts found.', style="bold yellow")
+            console.print(f'No SQL scripts found in {sql_dir}.', style="bold yellow")
             return
     except Exception as e:
         console.print(f'Error reading SQL scripts: {str(e)}', style="bold red")
         return
 
     try:
-        if Confirm.ask(f"Run SQL scripts in [bold blue]{sql_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
-            with Progress(
+        if not skip_confirm:
+            if not Confirm.ask(f"Run SQL scripts in [bold blue]{sql_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
+                console.print('Exiting')
+                return
+
+        with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(),
@@ -78,7 +110,9 @@ def exec_conv(options):
                         server,
                         database,
                         script_task,
-                        progress
+                        progress,
+                        username=username,
+                        password=password
                     )
                     progress.update(task, advance=1)
                     
@@ -89,9 +123,18 @@ def exec_conv(options):
                             return
                         progress.start()
                     
-            # Backup process
-            try:
-                if backup:
+        # Backup process
+        try:
+            if backup:
+                backup_db({
+                    'database': database,
+                    'output': os.path.join(BASE_DIR, 'backups'),
+                    'server': server,
+                    'phase': phase,
+                    'group': group
+                })
+            else:
+                if Confirm.ask("SQL scripts completed. Backup database?"):
                     backup_db({
                         'database': database,
                         'output': os.path.join(BASE_DIR, 'backups'),
@@ -99,20 +142,9 @@ def exec_conv(options):
                         'phase': phase,
                         'group': group
                     })
-                else:
-                    if Confirm.ask("SQL scripts completed. Backup database?"):
-                        backup_db({
-                            'database': database,
-                            'output': os.path.join(BASE_DIR, 'backups'),
-                            'server': server,
-                            'phase': phase,
-                            'group': group
-                        })
-            except Exception as e:
-                console.print(f'Error during backup: {str(e)}', style="bold red")
+        except Exception as e:
+            console.print(f'Error during backup: {str(e)}', style="bold red")
 
     except Exception as e:
         console.print(f'Error during SQL script execution: {str(e)}', style="bold red")
         return
-
-    

@@ -79,7 +79,8 @@ def backup(args):
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
         'output': args.output or os.path.join(os.getcwd(),'backups'),
-        'message': args.message
+        'phase': args.phase,
+        'group': args.group
     }
     backup_db(options)
 
@@ -93,11 +94,14 @@ def run(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
+        'username': args.username,
+        'password': args.password,
         'phase': args.phase,
         'group': args.group,
         'backup': args.backup,
         'skip': args.skip,
-        'debug': args.debug
+        'debug': args.debug,
+        'input': args.input
         # 'sequence': args.seq,
         # 'series': args.series,
         # 'run_all': args.all,
@@ -111,7 +115,8 @@ def restore(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
-        'virgin': args.virgin
+        'phase': args.phase,
+        'group': args.group
     }
     restore_db(options)
 
@@ -169,43 +174,55 @@ def main():
         # help='sub-command help'
     )
 
-    # ---------------------------------------------------------------------------------------------------------------------------------------------
-    # Command: backup
+    """ ---------------------------------------------------------------------------------------------------------------------------------------------
+    Command: backup
+    """
     backup_parser = subparsers.add_parser('backup', help='Backup database')
+    # Flags
     backup_parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
     backup_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
     backup_parser.add_argument('-o', '--output', help='Output directory. Defaults to /backups', metavar='')
     backup_parser.add_argument('-m', '--message', help='Optional message to include in the filename', metavar='')
+    backup_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
+    backup_parser.add_argument('--group', help='Script group for filename lookup. Only applicable if phase is "conv"', metavar='')
     backup_parser.set_defaults(func=backup)
 
-    # ---------------------------------------------------------------------------------------------------------------------------------------------
-    # Command: restore
+    """ ---------------------------------------------------------------------------------------------------------------------------------------------
+    Command: restore
+    """
     restore_parser = subparsers.add_parser('restore', help='Restore database')
+    # Flags
     restore_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     restore_parser.add_argument('-d', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
-    restore_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
+    restore_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
+    restore_parser.add_argument('--group', help='Script group for filename lookup. Only applicable if phase is "conv"', metavar='')
+    # restore_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
     restore_parser.set_defaults(func=restore)
 
-    # --------------------------------------------------------------------------------------------------------------------------------------------- 
-    # Command: map
+    """ ---------------------------------------------------------------------------------------------------------------------------------------------
+    Command: map
+    """
     mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
-    mapping_parser.add_argument('system', nargs='?',help='SQL Script sequence to execute.', choices=['needles'], type=str)
+    mapping_parser.add_argument('system', help='SQL Script sequence to execute.', choices=['needles'], type=str)
     mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
     mapping_parser.set_defaults(func=map)
 
-    # ---------------------------------------------------------------------------------------------------------------------------------------------
-    # Command: run
+    """ ---------------------------------------------------------------------------------------------------------------------------------------------
+    Command: run
+    """
     run_parser = subparsers.add_parser('run', help='Run SQL scripts')
-    # Arguments ---------------
+    # Arguments
     run_parser.add_argument(
-        'phase',
-        choices=['map', 'conv', 'post'],
+        '-ph',
+        '--phase',
+        choices=['map', 'conv', 'post', 'test'],
         metavar='phase',
         help='The phase of SQL scripts to run: {map, conv, post}'
     )
     run_parser.add_argument(
-        'group',
+        '-gr',
+        '--group',
         nargs='?',
         choices=['config', 'contact', 'case', 'udf', 'misc', 'intake'],
         metavar='group',
@@ -215,10 +232,13 @@ def main():
     # Flags -------------------
     run_parser.add_argument('-s','--server', help='SQL Server. If omitted, defaults to SERVER from .env', metavar='')
     run_parser.add_argument('-d', '--database', help='Database. If omitted, defaults to SA_DB from .env', metavar='')
+    run_parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
+    run_parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
     run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup database after script execution')
     run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
     run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
     run_parser.add_argument('--all', action='store_true', help='Run all groups in the "conv" phase')
+    run_parser.add_argument('--input', help='')
     # run_parser.add_argument('-i', '--init', action='store_true', help='Run SQL scripts in the "init" directory.')
     # run_parser.add_argument('-m', '--map', action='store_true', help='Run SQL scripts in the "map" directory.')
     # run_parser.add_argument('-p', '--post', action='store_true', help='Run SQL scripts in the "post" directory.')

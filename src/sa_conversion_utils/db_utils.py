@@ -84,8 +84,9 @@ def backup_db(options):
         )
 
         try:
-            subprocess.run(backup_command, check=True, shell=True)
-            console.print(f"[green]Backup for {database} completed successfully at {backup_path}.")
+            with console.status('Backing up database...'):
+                subprocess.run(backup_command, check=True, shell=True)
+            console.print(f"[green]Backup complete: {backup_path}.")
         except subprocess.CalledProcessError as error:
             console.print(f"[red]Error backing up database {database}: {error}")
 
@@ -95,6 +96,7 @@ def restore_db(options):
     phase = options.get('phase')
     group = options.get('group')
     backup_dir = options.get('backup_dir', 'backups')
+    manual = options.get('manual', False) 
 
     if not server:
         print("Missing server parameter.")
@@ -108,16 +110,24 @@ def restore_db(options):
         f"[yellow]Looking for backup file for database: {database}, phase: {phase}, group: {group}...[/yellow]"
         )
 
-    # Find the backup file based on provided options
-    backup_file = find_backup_file(database, phase, group, backup_dir)
-
-    if not backup_file:
-        console.print("[yellow]No backup file found matching the specified criteria. Please select the .bak backup file manually.[/yellow]")
+    # If 'manual' is True, skip file matching and go straight to file selection
+    if manual:
+        console.print("[yellow]Skipping automatic file search. Please select a backup file manually.[/yellow]")
         backup_file = select_bak_backup_file()
-
         if not backup_file:
             console.print("[red]No backup file selected. Exiting[/red]")
             return
+    else:
+        # Find the backup file based on provided options
+        backup_file = find_backup_file(database, phase, group, backup_dir)
+
+        if not backup_file:
+            console.print("[yellow]No backup file found matching the specified criteria. Please select the .bak backup file manually.[/yellow]")
+            backup_file = select_bak_backup_file()
+
+            if not backup_file:
+                console.print("[red]No backup file selected. Exiting[/red]")
+                return
 
     console.print(f"[green]Backup file found: {backup_file}[/green]")
 
