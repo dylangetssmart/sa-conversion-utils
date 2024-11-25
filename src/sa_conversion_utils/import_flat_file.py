@@ -115,6 +115,7 @@ def main(options):
 	input_path = options.get('input_path')
 	chunk_size = options.get('chunk_size')
 	conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
+	# conn_str = r'mssql+pyodbc://sa:SAsuper11050@72.52.250.51/testTanya?driver=ODBC+Driver+17+for+SQL+Server'
 	engine = create_engine(conn_str)
 
 	data_files = []

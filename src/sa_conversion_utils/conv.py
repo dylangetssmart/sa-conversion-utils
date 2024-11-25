@@ -13,7 +13,7 @@ from rich.prompt import Confirm, Prompt
 # from sql_runner import sql_runner
 from sa_conversion_utils.db_utils import restore_db, backup_db, create_db
 from sa_conversion_utils.run import exec_conv
-from sa_conversion_utils.mapping import generate_mapping
+from sa_conversion_utils.mapping import main as generate_mapping
 from sa_conversion_utils.import_flat_file import main as import_flat_file
 from sa_conversion_utils.psql_to_csv import main as convert_psql_to_csv
 from .utilities.migration_logger import log_migration_step
@@ -70,7 +70,7 @@ SA_DB = os.getenv('TARGET_DB')
 def map(args):
     options = {
         'server': args.server or SERVER,
-        'database': args.db or SOURCE_DB
+        'database': args.database or SOURCE_DB
     }
     generate_mapping(options)
 

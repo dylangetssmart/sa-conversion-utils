@@ -3,9 +3,12 @@ import re
 import pandas as pd
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+from rich.console import Console
 # Variables for database connection
 # db_server = "DYLANS"
 # db_name = "NeedlesSLF"
+
+console = Console()
 
 # Directory containing SQL files and output directory
 # sql_dir = '../sql/mapping'
@@ -22,7 +25,7 @@ SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
 # Get the current working directory
 base_dir = os.getcwd()
 
-mapping_dir = os.path.join(os.getcwd(),SQL_DIR,'mapping')
+mapping_dir = os.path.join(os.getcwd(),SQL_DIR,'map')
 
 def clean_string(value):
     if isinstance(value, str):
@@ -72,12 +75,12 @@ def save_to_excel(dataframes, output_path):
     except Exception as e:
         print(f"An error occurred while saving the Excel file: {e}")
 
-
-def generate_mapping(options):
+def main(options):
     server = options.get('server')
     database = options.get('database')
     # conn_str = f"mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
-    conn_str = f"mssql+pyodbc://sa:SAsuper@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
+    # conn_str = f"mssql+pyodbc://sa:SAsuper@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
+    conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
 
     """
     add an argument to use windows auth or accept a password (from .env)
@@ -111,26 +114,27 @@ def generate_mapping(options):
         "SA Party": None
     }
     
+    with console.status("working..."):
     # Iterate over SQL files in full_sql_dir
-    for filename in os.listdir(mapping_dir):
-        if filename.endswith('.sql'):
-            full_file_path = os.path.join(mapping_dir, filename)
-            sheet_name = os.path.splitext(filename)[0]  # Use filename without extension as sheet name
-            try:
-                with open(full_file_path, 'r') as file:
-                    query = file.read().strip()
-                    # Choose additional columns based on file or content type
-                    if 'party_role' in filename.lower():
-                        df = execute_query(query, engine, additional_columns=party_role_columns)
-                    else:
-                        df = execute_query(query, engine, additional_columns=general_columns)
-                    
-                    if not df.empty:
-                        dataframes[sheet_name] = df
-                    else:
-                        print(f"Empty DataFrame for SQL file: {filename}")
-            except Exception as e:
-                print(f"Failed to read SQL file {filename}: {e}")
+        for filename in os.listdir(mapping_dir):
+            if filename.endswith('.sql'):
+                full_file_path = os.path.join(mapping_dir, filename)
+                sheet_name = os.path.splitext(filename)[0]  # Use filename without extension as sheet name
+                try:
+                    with open(full_file_path, 'r') as file:
+                        query = file.read().strip()
+                        # Choose additional columns based on file or content type
+                        if 'party_role' in filename.lower():
+                            df = execute_query(query, engine, additional_columns=party_role_columns)
+                        else:
+                            df = execute_query(query, engine, additional_columns=general_columns)
+                        
+                        if not df.empty:
+                            dataframes[sheet_name] = df
+                        else:
+                            print(f"Empty DataFrame for SQL file: {filename}")
+                except Exception as e:
+                    print(f"Failed to read SQL file {filename}: {e}")
     
     # Debug print statements
     print(f"Queries executed: {len(dataframes)}")
@@ -147,5 +151,12 @@ def generate_mapping(options):
     
     print(f'Saved results to {output_path}')
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    options = {
+        'server': 'DylanS\\MSSQLSERVER2022',
+        'database': 'VanceLawFirm_Needles',
+        # 'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup\user_profile.csv",
+        # 'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup",
+        # 'chunk_size': 2000
+    }
+    main(options)
