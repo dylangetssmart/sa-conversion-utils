@@ -125,12 +125,15 @@ def run_conv(args):
             console.print("[bold red]Exiting[/bold red]")
             return
         case 'all':
-            print('all')
+            args.all = True
+            input_path = f"sql\\conv\\"
         case _:
             print('default')
 
     # Set the input path dynamically based on conversion type
-    input_path = f"sql\\conv\\{args.type}"
+    if not args.all:
+        input_path = f"sql\\conv\\{args.type}"
+
     run_common(args, input_path)
 
 def run_init(args):
@@ -139,7 +142,7 @@ def run_init(args):
 
 def run_common(args, input_path=None):
     """Execute common logic for all commands."""
-    
+    print(args)
     # Use input_path from argument or passed explicitly
     input_path = input_path or args.input
 
@@ -152,6 +155,7 @@ def run_common(args, input_path=None):
         'skip': args.skip,
         'debug': args.debug,
         'input': input_path,
+        'all': args.all
     }
     exec_conv(options)
 # def run(args):
