@@ -27,6 +27,20 @@ SERVER = os.getenv('SERVER')
 SOURCE_DB = os.getenv('SOURCE_DB')
 SA_DB = os.getenv('TARGET_DB')
 
+# Functions for subcommand logic
+def run_conv(args):
+    if not args.type:
+        args.type = Prompt.ask(
+            "[bold green]Select type of conversion[/bold green]",
+            choices=["contact", "case", "intake"],
+            default="contact"
+        )
+    console.print(f"[bold green]Running conversion for: {args.type} with flags: {args.flags}[/bold green]")
+
+
+def run_init(args):
+    console.print("[bold yellow]Initializing configurations.[/bold yellow]")
+
 # def execute_with_logging(func, args):
 #     start_time = datetime.now()
 #     output_errors = None
@@ -85,32 +99,74 @@ def backup(args):
     }
     backup_db(options)
 
-def run(args):
-    # Prompt.ask("Enter script series to run", choices=['conv', 'map','init','utilities'])
-    # print(args)
-    # if not args.all and not args.series:
-    #     print("Error: The 'run' command requires the 'series' argument unless '--all' is specified.")
+"""
+##############################################################################
+run
+"""
+def run_map(args):
+
+    if Prompt.ask("[bold green]Run scripts in sql/map[/bold green]"):
+        run_common(args, 'sql/map')
+
+def run_conv(args):
+    if not args.type:
+        args.type = Prompt.ask(
+            "[bold green]Select script group[/bold green]",
+            choices=["contact", "case", "intake", "misc", "udf", "all", "exit"],
+            default="contact"
+        )
+    
+    # if args.type == 'exit':
+    #     console.print("[bold red]Exiting[/bold red]")
     #     return
-    # print(args.subcommand, args.func.__name__)
+
+    match args.type:
+        case 'exit':
+            console.print("[bold red]Exiting[/bold red]")
+            return
+        case 'all':
+            print('all')
+        case _:
+            print('default')
+
+    # Set the input path dynamically based on conversion type
+    input_path = f"sql\\conv\\{args.type}"
+    run_common(args, input_path)
+
+def run_init(args):
+    if Prompt.ask("[bold green]Run scripts in sql/init[/bold green]"):
+        run_common(args, 'sql/init')
+
+def run_common(args, input_path=None):
+    """Execute common logic for all commands."""
+    
+    # Use input_path from argument or passed explicitly
+    input_path = input_path or args.input
+
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
         'username': args.username,
         'password': args.password,
-        # 'phase': args.phase,
-        # 'group': args.group,
-        'backup': args.backup,
+        # 'backup': args.backup,
         'skip': args.skip,
         'debug': args.debug,
-        'input': args.input
-        # 'sequence': args.seq,
-        # 'series': args.series,
-        # 'run_all': args.all,
-        # 'init': args.init,
-        # 'map': args.map,
-        # 'post': args.post,
+        'input': input_path,
     }
     exec_conv(options)
+# def run(args):
+    
+#     options = {
+#         'server': args.server or SERVER,
+#         'database': args.database or SA_DB,
+#         'username': args.username,
+#         'password': args.password,
+#         'backup': args.backup,
+#         'skip': args.skip,
+#         'debug': args.debug,
+#         'input': args.input or f'sql/{args.command}'
+#     }
+#     exec_conv(options)
 
 def restore(args):
     options = {
@@ -169,19 +225,27 @@ def handle_convert_psql_to_csv(args):
 
 def main():
     parser = argparse.ArgumentParser(description='SmartAdvocate Data Conversion CLI.')
+
+    # Global flags
+    parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
+    parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
+    parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
+    parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
+    
+    # Subcommands
     subparsers = parser.add_subparsers(
         title="operations",
         dest='subcommand'
-        # help='sub-command help'
     )
+    subparsers.required = True
 
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: backup
     """
     backup_parser = subparsers.add_parser('backup', help='Backup database')
-    # Flags
     backup_parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
     backup_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
+    # Flags
     backup_parser.add_argument('-o', '--output', help='Output directory. Defaults to /backups', metavar='')
     backup_parser.add_argument('-m', '--message', help='Optional message to include in the filename', metavar='')
     backup_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
@@ -192,7 +256,6 @@ def main():
     Command: restore
     """
     restore_parser = subparsers.add_parser('restore', help='Restore database')
-    # Flags
     restore_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     restore_parser.add_argument('-d', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
     restore_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
@@ -203,30 +266,51 @@ def main():
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: map
     """
-    mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
-    mapping_parser.add_argument('system', help='SQL Script sequence to execute.', choices=['needles'], type=str)
-    mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
-    mapping_parser.set_defaults(func=map)
+    # mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
+    # mapping_parser.add_argument('system', help='SQL Script sequence to execute.', choices=['needles'], type=str)
+    # mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
+    # mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
+    # mapping_parser.set_defaults(func=map)
 
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: run
     """
     run_parser = subparsers.add_parser('run', help='Run SQL scripts')
+    run_subparsers = run_parser.add_subparsers(title="run subcommands", dest="subcommand")
+    run_parser.add_argument('-i', '--input', help='Input path of sql scripts')
+    run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
+    run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
+    run_subparsers.required = True
+
+    # Subcommand: run > conv
+    conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')
+    conv_parser.add_argument("--type", type=str, choices=["contact", "case", "intake", "misc", "udf", "all"], help="Type of conversion")
+    conv_parser.set_defaults(func=run_conv)
+
+    # Subcommand: run > map
+    map_parser = run_subparsers.add_parser('map', help='Execute mapping operations')
+    map_parser.set_defaults(func=run_map)
+
+    # Subcommand: run > init
+    init_parser = run_subparsers.add_parser('init', help='Initialize configurations')
+    init_parser.set_defaults(func=run_init)
+
+
+
     # Arguments
     # run_parser.add_argument('-ph','--phase',choices=['map', 'conv', 'post', 'test'],metavar='phase',help='The phase of SQL scripts to run: {map, conv, post}')
     # run_parser.add_argument('-gr','--group',nargs='?',choices=['config', 'contact', 'case', 'udf', 'misc', 'intake'],metavar='group',help='The specific group of scripts to run (required if phase = conv): {config, contact, case, udf, misc, intake}')
     # Flags -------------------
-    run_parser.add_argument('-s','--server', help='SQL Server. If omitted, defaults to SERVER from .env', metavar='')
-    run_parser.add_argument('-d', '--database', help='Database. If omitted, defaults to SA_DB from .env', metavar='')
-    run_parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
-    run_parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
-    run_parser.add_argument('-i', '--input', help='Input path of sql scripts')
-    run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup database after script execution')
-    run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
-    run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
-    run_parser.add_argument('--all', action='store_true', help='Run all groups in the "conv" phase')
-    run_parser.set_defaults(func=run)
+    # run_parser.add_argument('-s','--server', help='SQL Server. If omitted, defaults to SERVER from .env', metavar='')
+    # run_parser.add_argument('-d', '--database', help='Database. If omitted, defaults to SA_DB from .env', metavar='')
+    # run_parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
+    # run_parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
+    # # run_parser.add_argument('-i', '--input', help='Input path of sql scripts')
+    # run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup database after script execution')
+    # run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
+    # run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
+    # run_parser.add_argument('--all', action='store_true', help='Run all groups in the "conv" phase')
+    # run_parser.set_defaults(func=run)
     
     # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: encrypt

@@ -40,6 +40,8 @@ def exec_conv(options):
 
     sql_dir = os.path.join(BASE_DIR, input_dir)
 
+    ordered_folders = ['contact', 'case', 'udf', 'misc', 'intake']
+
     # Map short group names to actual folder names
     # group_mapping = {
     #     'config': '0_config',
@@ -84,6 +86,7 @@ def exec_conv(options):
 
     # Get list of SQL files
     try:
+        
         scripts = [file for file in os.listdir(sql_dir) if file.lower().endswith('.sql')]
 
         # Omit files with "skip" in the name if the skip option is True
@@ -99,8 +102,8 @@ def exec_conv(options):
 
     try:
         if not skip_confirm:
-            if not Confirm.ask(f"Run [bold blue]{sql_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
-                console.print('Exiting')
+            if not Confirm.ask(f"Run [bold blue]{sql_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow] skip = {skip} | debug = {debug}"):
+                console.print('[bold red]Exiting[/bold red]')
                 return
 
         with Progress(
