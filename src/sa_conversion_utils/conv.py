@@ -105,7 +105,7 @@ run
 """
 def run_map(args):
 
-    if Prompt.ask("[bold green]Run scripts in sql/map[/bold green]"):
+    if Confirm.ask("[bold green]Run scripts in sql/map[/bold green]"):
         run_common(args, 'sql/map')
 
 def run_conv(args):
@@ -115,10 +115,6 @@ def run_conv(args):
             choices=["contact", "case", "intake", "misc", "udf", "all", "exit"],
             default="contact"
         )
-    
-    # if args.type == 'exit':
-    #     console.print("[bold red]Exiting[/bold red]")
-    #     return
 
     match args.type:
         case 'exit':
@@ -127,24 +123,24 @@ def run_conv(args):
         case 'all':
             args.all = True
             input_path = f"sql\\conv\\"
+            run_common(args, input_path, is_all = True)
         case _:
-            print('default')
-
-    # Set the input path dynamically based on conversion type
-    if not args.all:
-        input_path = f"sql\\conv\\{args.type}"
-
-    run_common(args, input_path)
+            input_path = f"sql\\conv\\{args.type}"
+            run_common(args, input_path, is_all = False)
 
 def run_init(args):
-    if Prompt.ask("[bold green]Run scripts in sql/init[/bold green]"):
+    if Confirm.ask("[bold green]Run scripts in sql/init[/bold green]"):
         run_common(args, 'sql/init')
 
-def run_common(args, input_path=None):
+def run_post(args):
+    if Confirm.ask("[bold green]Run scripts in sql/post[/bold green]"):
+        run_common(args, 'sql/post')
+
+def run_common(args, input_path=None, is_all = False):
     """Execute common logic for all commands."""
-    print(args)
+    # print(args)
     # Use input_path from argument or passed explicitly
-    input_path = input_path or args.input
+    # input_path = input_path or args.input
 
     options = {
         'server': args.server or SERVER,
@@ -155,7 +151,7 @@ def run_common(args, input_path=None):
         'skip': args.skip,
         'debug': args.debug,
         'input': input_path,
-        'all': args.all
+        'all': is_all
     }
     exec_conv(options)
 # def run(args):
@@ -299,7 +295,9 @@ def main():
     init_parser = run_subparsers.add_parser('init', help='Initialize configurations')
     init_parser.set_defaults(func=run_init)
 
-
+    # Subcommand: run > post
+    post_parser = run_subparsers.add_parser('post', help='Cleanup scripts')
+    post_parser.set_defaults(func=run_post)
 
     # Arguments
     # run_parser.add_argument('-ph','--phase',choices=['map', 'conv', 'post', 'test'],metavar='phase',help='The phase of SQL scripts to run: {map, conv, post}')
