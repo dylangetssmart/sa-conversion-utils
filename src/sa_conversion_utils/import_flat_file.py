@@ -4,7 +4,7 @@ import re
 import csv
 from datetime import datetime
 import pandas as pd
-from sqlalchemy import create_engine
+# from sqlalchemy import create_engine
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
@@ -16,12 +16,14 @@ try:
 	from .utilities.detect_encoding import detect_encoding
 	from .utilities.logger import log_message
 	from .db_utils import backup_db
+	from .utilities.create_engine import main as create_engine
 except ImportError:
 	# Absolute import for standalone context
 	from sa_conversion_utils.utilities.count_lines import count_lines_mmap
 	from sa_conversion_utils.utilities.detect_encoding import detect_encoding
 	from sa_conversion_utils.utilities.logger import log_message
 	from sa_conversion_utils.db_utils import backup_db
+	from sa_conversion_utils.utilities.create_engine import main as create_engine
 
 console = Console()
 encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
@@ -116,7 +118,9 @@ def main(options):
 	chunk_size = options.get('chunk_size')
 	conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
 	# conn_str = r'mssql+pyodbc://sa:SAsuper11050@72.52.250.51/testTanya?driver=ODBC+Driver+17+for+SQL+Server'
-	engine = create_engine(conn_str)
+	# engine = create_engine(conn_str)
+
+	engine = create_engine(server=server,database=database,windows_auth=True)
 
 	data_files = []
 	file_summary = {}
@@ -125,13 +129,13 @@ def main(options):
 	if os.path.isdir(input_path):
 		data_files = [
 			os.path.join(input_path, f) for f in os.listdir(input_path)
-			if f.endswith(('.csv', '.txt')) and f != 'import_log.txt'
+			if f.lower().endswith(('.csv', '.txt', '.exp')) and f != 'import_log.txt'
 		]
 		if not data_files:
 			console.print(f"[yellow]No CSV or TXT files found in the directory: {input_path}")
 			return
 	elif os.path.isfile(input_path):
-		if input_path.endswith(('.csv', '.txt')):
+		if input_path.lower().endswith(('.csv', '.txt', '.exp')):
 			data_files = [input_path]
 		else:
 			console.print(f"[yellow]The specified file is not a CSV or TXT: {input_path}")
@@ -199,9 +203,9 @@ def main(options):
 if __name__ == "__main__":
     options = {
         'server': 'DylanS\\MSSQLSERVER2022',
-        'database': 'JoelBieber_GrowPath',
-        'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup\user_profile.csv",
+        'database': 'test',
+        'input_path': r"C:\Users\dsmith\Downloads\CMCLIENT.EXP",
         # 'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup",
-		'chunk_size': 2000
+		'chunk_size': 10000
     }
     main(options)

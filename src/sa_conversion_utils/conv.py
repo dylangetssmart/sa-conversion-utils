@@ -201,8 +201,9 @@ def handle_import_flat_file(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
+        'username': args.username,
+        'password': args.password,
         'input_path': args.input,
-        # 'table': args.table,
         'chunk_size': args.chunk
     }
     import_flat_file(options)
@@ -326,11 +327,13 @@ def main():
     import_subparsers = import_parser.add_subparsers(title="Convert Variants", dest="convert_variant")
 
     # Subcommand: flat file
-    flat_file_parser = import_subparsers.add_parser("flat-file", help="Import data from flat files to SQL")
+    flat_file_parser = import_subparsers.add_parser("flat-file", help="Import data from flat files to SQL. Leave username and password blank to use windows authentication")
     flat_file_parser.add_argument('-s','--server', help='Server name. Defaults to SERVER from .env.', metavar='')
     flat_file_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env.', metavar='')
+    flat_file_parser.add_argument('-u', '--username', help='SQL Server username', metavar='')
+    flat_file_parser.add_argument('-p', '--password', help='SQL Sever password', metavar='')
     flat_file_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
-    flat_file_parser.add_argument("-c", "--chunk", type=int, default=2000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
+    flat_file_parser.add_argument("-c", "--chunk", type=int, default=10000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
     flat_file_parser.set_defaults(func=handle_import_flat_file)
 
     # ---------------------------------------------------------------------------------------------------------------------------------------------
