@@ -34,6 +34,7 @@ def exec_conv(options):
     debug = options.get('debug', False)
     run_all = options.get('all', False)
 
+    sql_dir = input_dir
     ordered_folders = ['init', 'contact', 'case', 'udf', 'misc', 'intake']
 
     # Determine which directories to process

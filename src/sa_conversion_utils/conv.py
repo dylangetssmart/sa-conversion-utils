@@ -150,7 +150,7 @@ def run_common(args, input_path=None, is_all = False):
         # 'backup': args.backup,
         'skip': args.skip,
         'debug': args.debug,
-        'input': input_path,
+        'input': args.input or input_path,
         'all': is_all
     }
     exec_conv(options)
@@ -280,7 +280,8 @@ def main():
     run_parser.add_argument('-i', '--input', help='Input path of sql scripts')
     run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
     run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
-    run_subparsers.required = True
+    run_parser.set_defaults(func=run_common)
+    run_subparsers.required = False
 
     # Subcommand: run > conv
     conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')
