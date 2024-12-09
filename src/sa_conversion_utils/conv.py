@@ -173,7 +173,8 @@ def restore(args):
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
         'phase': args.phase,
-        'group': args.group
+        'group': args.group,
+        'virgin': args.virgin
     }
     restore_db(options)
 
@@ -261,6 +262,7 @@ def main():
     restore_parser.add_argument('-d', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
     restore_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
     restore_parser.add_argument('--group', help='Script group for filename lookup. Only applicable if phase is "conv"', metavar='')
+    restore_parser.add_argument('-v', '--virgin', action='store_true', help='Use hardcoded virgin SA database')
     # restore_parser.add_argument('-v', '--virgin', action='store_true', help='Restore the specified databse to a virgin SA database.')
     restore_parser.set_defaults(func=restore)
 

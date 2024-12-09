@@ -93,7 +93,8 @@ def restore_db(options):
     phase = options.get('phase')
     group = options.get('group')
     backup_dir = options.get('backup_dir', 'backups')
-    manual = options.get('manual', False) 
+    manual = options.get('manual', False)
+    virgin = options.get('virgin', False)
 
     if not server:
         print("Missing server parameter.")
@@ -107,8 +108,10 @@ def restore_db(options):
         f"[yellow]Looking for backup file for database: {database}, phase: {phase}, group: {group}...[/yellow]"
         )
 
+    if virgin:
+        backup_file = r"C:\LocalConv\_virgin\SADatabase\SA 2024-12-04.bak"
     # If 'manual' is True, skip file matching and go straight to file selection
-    if manual:
+    elif manual:
         console.print("[yellow]Skipping automatic file search. Please select a backup file manually.[/yellow]")
         backup_file = select_bak_backup_file()
         if not backup_file:
