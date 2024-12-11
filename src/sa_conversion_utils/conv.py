@@ -335,16 +335,16 @@ def main():
     flat_file_parser.add_argument('-u', '--username', help='SQL Server username', metavar='')
     flat_file_parser.add_argument('-p', '--password', help='SQL Sever password', metavar='')
     flat_file_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
-    flat_file_parser.add_argument("-c", "--chunk", type=int, default=10000, help="Chunk (row) size for processing. Defaults to 2,000 rows at a time")
+    flat_file_parser.add_argument("-c", "--chunk", type=int, default=10000, help="Number of rows to process at a time. Defaults = 2,000 rows. More = faster but uses more memory")
     flat_file_parser.set_defaults(func=handle_import_flat_file)
 
     # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: export
-    export_parser = subparsers.add_parser("export", help="Convert data from one type to another, such as .csv to sql")
-    export_subparsers = export_parser.add_subparsers(title="Convert Variants", dest="convert_variant")
+    export_parser = subparsers.add_parser("export", help="Export data from a database")
+    export_subparsers = export_parser.add_subparsers(title="Supported exports", dest="convert_variant")
 
     # Subcommand: convert psql-to-csv
-    psql_to_csv_parser = import_subparsers.add_parser("psql-csv", help="Convert PostgreSQL to CSV")
+    psql_to_csv_parser = export_subparsers.add_parser("psql-csv", help="Export PostgreSQL tables to .csv")
     psql_to_csv_parser.add_argument("-s", "--server", required=True, help="PostgreSQL hostname")
     psql_to_csv_parser.add_argument("-d", "--database", required=True, help="PostgreSQL database name")
     psql_to_csv_parser.add_argument("-u", "--username", required=True, help="PostgreSQL username")

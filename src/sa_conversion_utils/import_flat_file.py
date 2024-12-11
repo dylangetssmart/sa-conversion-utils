@@ -120,7 +120,7 @@ def main(options):
 	# conn_str = r'mssql+pyodbc://sa:SAsuper11050@72.52.250.51/testTanya?driver=ODBC+Driver+17+for+SQL+Server'
 	# engine = create_engine(conn_str)
 
-	engine = create_engine(server=server,database=database,windows_auth=True)
+	engine = create_engine(server=server,database=database)
 
 	data_files = []
 	file_summary = {}

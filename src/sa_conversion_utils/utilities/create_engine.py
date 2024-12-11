@@ -43,11 +43,6 @@ def main(
 				"driver": "ODBC Driver 17 for SQL Server",
 			}
 		)
-        # query={
-        #     "driver": "ODBC Driver 18 for SQL Server",
-        #     "TrustServerCertificate": "yes",
-        #     "authentication": "ActiveDirectoryIntegrated",
-        # },
 
     # conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
     # connection_string = f"mssql+pyodbc://sa:SAsuper@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
