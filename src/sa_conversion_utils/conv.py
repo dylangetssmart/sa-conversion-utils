@@ -86,7 +86,8 @@ def map(args):
         'server': args.server or SERVER,
         'database': args.database or SOURCE_DB
     }
-    generate_mapping(options)
+    if Confirm.ask("[bold green]Run scripts in /map and output results to Excel[/bold green]"):
+        generate_mapping(options)
 
 def backup(args):
     options = {
@@ -103,10 +104,9 @@ def backup(args):
 ##############################################################################
 run
 """
-def run_map(args):
-
-    if Confirm.ask("[bold green]Run scripts in sql/map[/bold green]"):
-        run_common(args, 'sql/map')
+# def run_map(args):
+#     if Confirm.ask("[bold green]Run scripts in sql/map[/bold green]"):
+#         run_common(args, 'sql/map')
 
 def run_conv(args):
     if not args.type:
@@ -233,6 +233,7 @@ def main():
     parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
     parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
     parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
+    parser.add_argument('-o', '--output', help='Output directory.', metavar='')
     
     # Subcommands
     subparsers = parser.add_subparsers(
@@ -267,13 +268,13 @@ def main():
     restore_parser.set_defaults(func=restore)
 
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
-    Command: map
+    Command: generate-mapping
     """
-    # mapping_parser = subparsers.add_parser('map', help='Generate Excel mapping template.')
+    mapping_parser = subparsers.add_parser('generate-mapping', help='Run SQL scripts in \map and output the results to Excel.')
     # mapping_parser.add_argument('system', help='SQL Script sequence to execute.', choices=['needles'], type=str)
     # mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     # mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
-    # mapping_parser.set_defaults(func=map)
+    mapping_parser.set_defaults(func=map)
 
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: run
@@ -292,8 +293,8 @@ def main():
     conv_parser.set_defaults(func=run_conv)
 
     # Subcommand: run > map
-    map_parser = run_subparsers.add_parser('map', help='Execute mapping operations')
-    map_parser.set_defaults(func=run_map)
+    # map_parser = run_subparsers.add_parser('map', help='Execute mapping operations')
+    # map_parser.set_defaults(func=run_map)
 
     # Subcommand: run > init
     init_parser = run_subparsers.add_parser('init', help='Initialize configurations')

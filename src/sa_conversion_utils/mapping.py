@@ -1,13 +1,10 @@
 import os
 import re
 import pandas as pd
-from sqlalchemy import create_engine
+# from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from rich.console import Console
-# Variables for database connection
-# db_server = "DYLANS"
-# db_name = "NeedlesSLF"
-
+from sa_conversion_utils.utilities.create_engine import main as create_engine
 console = Console()
 
 # Directory containing SQL files and output directory
@@ -16,16 +13,10 @@ console = Console()
 
 # Load environment variables
 load_dotenv()
-# SERVER = os.getenv('SERVER')
-# LITIFY_DB = os.getenv('SOURCE_DB') # Import data to the source_db
 SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
+BASE_DIR = os.getcwd()
 
-# WORKING_DIR = os.path.join(os.getcwd(),SQL_SCRIPTS_DIR)
-
-# Get the current working directory
-base_dir = os.getcwd()
-
-mapping_dir = os.path.join(os.getcwd(),SQL_DIR,'map')
+mapping_dir = os.path.join(BASE_DIR, SQL_DIR,'map')
 
 def clean_string(value):
     if isinstance(value, str):
@@ -80,21 +71,11 @@ def main(options):
     database = options.get('database')
     # conn_str = f"mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
     # conn_str = f"mssql+pyodbc://sa:SAsuper@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
-    conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
-
-    """
-    add an argument to use windows auth or accept a password (from .env)
+    # conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
+    # engine = create_engine(conn_str)
     
-    """
+    engine = create_engine(server=server, database=database)
 
-
-    # custom_message = f"generate mapping template"
-    # if not confirm_execution(server, database, custom_message):
-    #     return
-
-    # Create SQLAlchemy engine
-    engine = create_engine(conn_str)
-    
     # Create a dictionary to store DataFrames for each query
     dataframes = {}
     
@@ -137,16 +118,16 @@ def main(options):
                     print(f"Failed to read SQL file {filename}: {e}")
     
     # Debug print statements
-    print(f"Queries executed: {len(dataframes)}")
-    for name in dataframes:
-        print(f"DataFrame '{name}' shape: {dataframes[name].shape}")
+    # print(f"Queries executed: {len(dataframes)}")
+    # for name in dataframes:
+    #     print(f"DataFrame '{name}' shape: {dataframes[name].shape}")
     
-    parent_dir_name = os.path.basename(os.path.abspath(base_dir))
-    # parent_dir_name = os.path.basename(os.path.abspath(os.path.join(base_dir, os.pardir)))
+    parent_dir_name = os.path.basename(os.path.abspath(BASE_DIR))
+    # parent_dir_name = os.path.basename(os.path.abspath(os.path.join(BASE_DIR, os.pardir)))
 
     # Save all DataFrames to a single Excel file
     output_filename = f'{parent_dir_name} Mapping Template.xlsx'
-    output_path = os.path.join(base_dir, output_filename)
+    output_path = os.path.join(BASE_DIR, output_filename)
     save_to_excel(dataframes, output_path)
     
     print(f'Saved results to {output_path}')
