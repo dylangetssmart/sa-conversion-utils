@@ -270,7 +270,7 @@ def main():
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: generate-mapping
     """
-    mapping_parser = subparsers.add_parser('generate-mapping', help='Run SQL scripts in \map and output the results to Excel.')
+    mapping_parser = subparsers.add_parser('generate-mapping', help='Run SQL scripts in \\map and output the results to Excel.')
     # mapping_parser.add_argument('system', help='SQL Script sequence to execute.', choices=['needles'], type=str)
     # mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     # mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
