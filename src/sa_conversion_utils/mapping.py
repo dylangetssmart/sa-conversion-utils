@@ -31,7 +31,7 @@ def execute_query(query, engine, additional_columns=None):
     # Executes a SQL query and returns the result as a DataFrame with additional columns.
     try:
         df = pd.read_sql_query(query, engine)
-        print(f"Query executed successfully.")
+        # print(f"Query executed successfully.")
         
         # Add additional columns if provided
         if additional_columns:
@@ -50,7 +50,7 @@ def save_to_excel(dataframes, output_path):
         print("No data to save.")
         return
     
-    print(f"Attempting to save Excel file to: {output_path}")
+    # print(f"Attempting to save Excel file to: {output_path}")
 
     # Save DataFrames to Excel
     try:
@@ -60,7 +60,7 @@ def save_to_excel(dataframes, output_path):
                 # Sanitize DataFrame before saving
                 sanitized_df = sanitize_dataframe(df)
                 sanitized_df.to_excel(writer, sheet_name=sheet_name, index=False)
-        print(f"Excel file saved successfully to: {output_path}")
+        # print(f"Excel file saved successfully to: {output_path}")
     except PermissionError as e:
         print(f"Permission denied: {e}")
     except Exception as e:
