@@ -26,20 +26,21 @@ load_dotenv(os.path.join(os.getcwd(), '.env'))
 SERVER = os.getenv('SERVER')
 SOURCE_DB = os.getenv('SOURCE_DB')
 SA_DB = os.getenv('TARGET_DB')
+SQL_DIR = os.getenv('SQL_DIR')
 
-# Functions for subcommand logic
-def run_conv(args):
-    if not args.type:
-        args.type = Prompt.ask(
-            "[bold green]Select type of conversion[/bold green]",
-            choices=["contact", "case", "intake"],
-            default="contact"
-        )
-    console.print(f"[bold green]Running conversion for: {args.type} with flags: {args.flags}[/bold green]")
+# # Functions for subcommand logic
+# def run_conv(args):
+#     if not args.type:
+#         args.type = Prompt.ask(
+#             "[bold green]Select type of conversion[/bold green]",
+#             choices=["contact", "case", "intake"],
+#             default="contact"
+#         )
+#     console.print(f"[bold green]Running conversion for: {args.type} with flags: {args.flags}[/bold green]")
 
 
-def run_init(args):
-    console.print("[bold yellow]Initializing configurations.[/bold yellow]")
+# def run_init(args):
+#     console.print("[bold yellow]Initializing configurations.[/bold yellow]")
 
 # def execute_with_logging(func, args):
 #     start_time = datetime.now()
@@ -112,7 +113,7 @@ def run_conv(args):
     if not args.type:
         args.type = Prompt.ask(
             "[bold green]Select script group[/bold green]",
-            choices=["contact", "case", "intake", "misc", "udf", "all", "exit"],
+            choices=["contact", "case", "intake", "misc", "udf", "all", "vanilla", "exit"],
             default="contact"
         )
 
@@ -122,11 +123,23 @@ def run_conv(args):
             return
         case 'all':
             args.all = True
-            input_path = f"sql\\conv\\"
-            run_common(args, input_path, is_all = True)
+            args.vanilla = False
+            # input_path = f"sql\\conv\\"
+            input_path = os.path.join(SQL_DIR, 'conv')
+            if Confirm.ask("[bold green]Run all conversion scripts[/bold green]"):
+                run_common(args, input_path, is_all = True)
+        case 'vanilla':
+            args.vanilla = True
+            args.all = True
+            # input_path = f"sql\\conv\\"
+            input_path = os.path.join(SQL_DIR, 'conv')
+            if Confirm.ask("[bold green]Run vanilla conversion[/bold green]"):                
+                run_common(args, input_path, is_all = True)
         case _:
-            input_path = f"sql\\conv\\{args.type}"
-            run_common(args, input_path, is_all = False)
+            # input_path = f"sql\\conv\\{args.type}"
+            input_path = os.path.join(SQL_DIR, 'conv', f'{args.type}')
+            if Confirm.ask(f"[bold green]Run {args.type} scripts[/bold green]"):
+                run_common(args, input_path, is_all = False)
 
 def run_init(args):
     if Confirm.ask("[bold green]Run scripts in sql/init[/bold green]"):
@@ -136,7 +149,7 @@ def run_post(args):
     if Confirm.ask("[bold green]Run scripts in sql/post[/bold green]"):
         run_common(args, 'sql/post')
 
-def run_common(args, input_path=None, is_all = False):
+def run_common(args, input_path = None, is_all = False, vanilla = False):
     """Execute common logic for all commands."""
     # print(args)
     # Use input_path from argument or passed explicitly
@@ -151,7 +164,8 @@ def run_common(args, input_path=None, is_all = False):
         'skip': args.skip,
         'debug': args.debug,
         'input': args.input or input_path,
-        'all': is_all
+        'all': is_all,
+        'vanilla': vanilla
     }
     exec_conv(options)
 # def run(args):
@@ -281,7 +295,7 @@ def main():
     """
     run_parser = subparsers.add_parser('run', help='Run SQL scripts')
     run_subparsers = run_parser.add_subparsers(title="run subcommands", dest="subcommand")
-    run_parser.add_argument('-i', '--input', help='Input path of sql scripts')
+    run_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
     run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
     run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
     run_parser.set_defaults(func=run_common)
@@ -289,7 +303,7 @@ def main():
 
     # Subcommand: run > conv
     conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')
-    conv_parser.add_argument("--type", type=str, choices=["contact", "case", "intake", "misc", "udf", "all"], help="Type of conversion")
+    conv_parser.add_argument("--type", type=str, choices=["contact", "case", "intake", "misc", "udf", "all", "vanilla"], help="Type of conversion")
     conv_parser.set_defaults(func=run_conv)
 
     # Subcommand: run > map
