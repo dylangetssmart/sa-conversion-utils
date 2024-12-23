@@ -113,7 +113,7 @@ def run_conv(args):
     if not args.type:
         args.type = Prompt.ask(
             "[bold green]Select script group[/bold green]",
-            choices=["contact", "case", "intake", "misc", "udf", "all", "vanilla", "exit"],
+            choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla", "exit"],
             default="contact"
         )
 
@@ -303,7 +303,7 @@ def main():
 
     # Subcommand: run > conv
     conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')
-    conv_parser.add_argument("--type", type=str, choices=["contact", "case", "intake", "misc", "udf", "all", "vanilla"], help="Type of conversion")
+    conv_parser.add_argument("--type", type=str, choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla"], help="Type of conversion")
     conv_parser.set_defaults(func=run_conv)
 
     # Subcommand: run > map
