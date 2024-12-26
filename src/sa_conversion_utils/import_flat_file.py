@@ -58,7 +58,7 @@ def read_csv_with_fallback(file_path):
 
 	raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
 
-def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file):
+def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file, if_exists):
 	# print(log_file)
 	file_name = os.path.basename(file_path)
 	df, encoding, delimiter = read_csv_with_fallback(file_path)
@@ -77,7 +77,8 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 					table_name,
 					engine,
 					index=False,
-					if_exists='append'
+					if_exists=if_exists
+					# if_exists='append'
 				)
 				progress.update(file_task, advance=len(df_chunk))
 			except TypeError as e:
@@ -116,6 +117,7 @@ def main(options):
 	table_name_options = options.get('table')
 	input_path = options.get('input_path')
 	chunk_size = options.get('chunk_size')
+	if_exists = options.get('if_exists')
 	conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
 	# conn_str = r'mssql+pyodbc://sa:SAsuper11050@72.52.250.51/testTanya?driver=ODBC+Driver+17+for+SQL+Server'
 	# engine = create_engine(conn_str)
@@ -188,7 +190,7 @@ def main(options):
 				table_name = table_name_options or os.path.splitext(os.path.basename(data_file))[0]
 
                 # Start conversion
-				convert(engine, data_file, table_name, progress, overall_task, file_task, chunk_size, log_file)
+				convert(engine, data_file, table_name, progress, overall_task, file_task, chunk_size, log_file, if_exists)
 
 	if len(data_files) > 0:
 		if Confirm.ask("Import completed. Backup database?"):
