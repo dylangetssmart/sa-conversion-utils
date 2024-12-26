@@ -28,60 +28,6 @@ SOURCE_DB = os.getenv('SOURCE_DB')
 SA_DB = os.getenv('TARGET_DB')
 SQL_DIR = os.getenv('SQL_DIR')
 
-# # Functions for subcommand logic
-# def run_conv(args):
-#     if not args.type:
-#         args.type = Prompt.ask(
-#             "[bold green]Select type of conversion[/bold green]",
-#             choices=["contact", "case", "intake"],
-#             default="contact"
-#         )
-#     console.print(f"[bold green]Running conversion for: {args.type} with flags: {args.flags}[/bold green]")
-
-
-# def run_init(args):
-#     console.print("[bold yellow]Initializing configurations.[/bold yellow]")
-
-# def execute_with_logging(func, args):
-#     start_time = datetime.now()
-#     output_errors = None
-#     sub_command = args.subcommand
-#     function_name = args.func.__name__
-#     database = getattr(args, 'database', None) or SA_DB if hasattr(args, 'database') else None
-#     # print(args.series)
-
-#     # Don't log when a parent command is run by itself (shows help)
-#     if function_name == '<lambda>':
-#         return
-
-#     def get_relevant_args(sub_command):
-#         match sub_command:
-#             case 'run':
-#                 return args.series
-#             case 'backup':
-#                 return args.message
-#             case _:
-#                 return ''
-
-#     try:
-#         func(args)
-#         status = "Completed"
-#     except Exception as e:
-#         status = "Failed"
-#         output_errors = str(e)
-    
-#     end_time = datetime.now()
-#     log_migration_step(
-#         database,
-#         sub_command,
-#         function_name,
-#         get_relevant_args(sub_command),
-#         status,
-#         start_time,
-#         end_time,
-#         output_errors
-#         )
-
 def map(args):
     options = {
         'server': args.server or SERVER,
@@ -219,7 +165,8 @@ def handle_import_flat_file(args):
         'username': args.username,
         'password': args.password,
         'input_path': args.input,
-        'chunk_size': args.chunk
+        'chunk_size': args.chunk,
+        'if_exists': args.exists
     }
     import_flat_file(options)
 
@@ -351,6 +298,7 @@ def main():
     flat_file_parser.add_argument('-p', '--password', help='SQL Sever password', metavar='')
     flat_file_parser.add_argument("-i", "--input", required=True, help="Path to CSV file or directory")
     flat_file_parser.add_argument("-c", "--chunk", type=int, default=10000, help="Number of rows to process at a time. Defaults = 2,000 rows. More = faster but uses more memory")
+    flat_file_parser.add_argument("--exists", choices=['append', 'fail', 'replace'], default='replace', help="Specify how to handle existing tables: 'append' (default), 'fail', or 'replace'")
     flat_file_parser.set_defaults(func=handle_import_flat_file)
 
     # ---------------------------------------------------------------------------------------------------------------------------------------------

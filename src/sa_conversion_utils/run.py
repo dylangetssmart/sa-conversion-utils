@@ -40,7 +40,7 @@ def exec_conv(options):
 
     # Determine which directories to process
     directories_to_process = (
-        [os.path.join(input_dir, folder) for folder in ordered_folders] if run_all
+        [os.path.join(input_dir, folder) for folder in os.listdir('/conversion')] if run_all
         else [input_dir]
     )
 
