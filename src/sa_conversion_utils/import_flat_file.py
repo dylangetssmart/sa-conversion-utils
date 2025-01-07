@@ -50,7 +50,13 @@ def read_csv_with_fallback(file_path):
 				# console.print(f"[blue]Detected delimiter '{delimiter}' for {os.path.basename(file_path)}")
 
 			# Read the file into DataFrame with detected settings
-			df = pd.read_csv(file_path, encoding=encoding, delimiter=delimiter, low_memory=False)
+			df = pd.read_csv(
+				file_path,
+				encoding=encoding,
+				delimiter=delimiter,
+				low_memory=False,
+				keep_default_na=False
+			)
 			return df, encoding, delimiter
 
 		except (UnicodeDecodeError, pd.errors.ParserError) as e:
@@ -103,7 +109,7 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 	else:
 		progress.console.print(f"[yellow]SKIP: {file_name} is empty.")
 		if log_file:
-			log_message(log_file, f"S: {file_name} | {encoding} | empty file")
+			log_message(log_file, f"SKIP: {file_name} | {encoding} | empty file")
 
     # Explicitly mark file task as complete
 	progress.update(file_task, completed=line_count)

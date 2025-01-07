@@ -54,7 +54,7 @@ def exec_conv(options):
 
             # The skip flag allows individual scripts to be skipped if the filename contains "skip"
             if skip:
-                scripts = [file for file in scripts if 'skip' not in file.lower()]
+                scripts = [file for file in scripts if '_skip_' not in file.lower()]
 
             # For a vanilla conversion, only run scripts prefixed with "std"
             if vanilla:
