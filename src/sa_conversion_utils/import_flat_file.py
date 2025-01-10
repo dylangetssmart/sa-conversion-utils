@@ -4,6 +4,8 @@ import re
 import csv
 from datetime import datetime
 import pandas as pd
+from tempfile import NamedTemporaryFile
+
 # from sqlalchemy import create_engine
 from rich.console import Console
 from rich.prompt import Confirm
@@ -32,14 +34,32 @@ def replace_newlines_with_pipe(df):
     # Apply replacement for all string columns in the DataFrame using map on each column
     return df.apply(lambda col: col.map(lambda x: re.sub(r'\r\n|\n', '|', x) if isinstance(x, str) else x))
 
+def clean_file(file_path, encoding):
+	with open(file_path, 'r', encoding='ISO-8859-1') as file:
+		data = file.read()
+	
+	cleaned_data = data.replace('\x00', '')
+	temp_file = NamedTemporaryFile(delete=False, mode='w', encoding=encoding)
+	temp_file.write(cleaned_data)
+	temp_file.close()
+
+	return temp_file.name
+
 def read_csv_with_fallback(file_path):
-	detected_encoding = detect_encoding(file_path)
-	all_encodings = [detected_encoding] + encodings
+	# Detect encoding of the file
+	# detected_encoding = detect_encoding(file_path)
+
+	# Clean the file of null bytes
+	# cleaned_file = clean_file(file_path, detected_encoding)
+	cleaned_file = clean_file(file_path, 'utf-8')
+
+	all_encodings = encodings
+	# all_encodings = [detected_encoding] + encodings
 
 	for encoding in all_encodings:
 		try:
 			# Detect delimiter from the first line with the given encoding
-			with open(file_path, 'r', encoding=encoding) as file:
+			with open(cleaned_file, 'r', encoding=encoding) as file:
 				sample = file.readline()
 				sniffer = csv.Sniffer()
 				try:
@@ -51,11 +71,12 @@ def read_csv_with_fallback(file_path):
 
 			# Read the file into DataFrame with detected settings
 			df = pd.read_csv(
-				file_path,
+				cleaned_file,
+				# file_path,
 				encoding=encoding,
 				delimiter=delimiter,
-				low_memory=False,
-				keep_default_na=False
+				low_memory=False
+				# keep_default_na=False
 			)
 			return df, encoding, delimiter
 
@@ -64,11 +85,11 @@ def read_csv_with_fallback(file_path):
 
 	raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
 
-def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file, if_exists):
+def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file, if_exists='append'):
 	# print(log_file)
 	file_name = os.path.basename(file_path)
 	df, encoding, delimiter = read_csv_with_fallback(file_path)
-	df = replace_newlines_with_pipe(df)
+	# df = replace_newlines_with_pipe(df)
 	line_count = count_lines_mmap(file_path)
 
 	if log_file:
@@ -83,8 +104,7 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 					table_name,
 					engine,
 					index=False,
-					if_exists=if_exists
-					# if_exists='append'
+					if_exists='append'
 				)
 				progress.update(file_task, advance=len(df_chunk))
 			except TypeError as e:
@@ -123,7 +143,7 @@ def main(options):
 	table_name_options = options.get('table')
 	input_path = options.get('input_path')
 	chunk_size = options.get('chunk_size')
-	if_exists = options.get('if_exists')
+	if_exists = options.get('if_exists', 'replace')
 	conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
 	# conn_str = r'mssql+pyodbc://sa:SAsuper11050@72.52.250.51/testTanya?driver=ODBC+Driver+17+for+SQL+Server'
 	# engine = create_engine(conn_str)
@@ -212,7 +232,7 @@ if __name__ == "__main__":
     options = {
         'server': 'DylanS\\MSSQLSERVER2022',
         'database': 'test',
-        'input_path': r"C:\Users\dsmith\Downloads\CMCLIENT.EXP",
+        'input_path': r"C:\LocalConv\Litify-Shiner\trans\12.4.2024LitifyBackup\litify_pm__Damage__c.csv",
         # 'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup",
 		'chunk_size': 10000
     }

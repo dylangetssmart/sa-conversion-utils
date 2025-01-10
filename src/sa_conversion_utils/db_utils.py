@@ -9,12 +9,10 @@ from rich.prompt import Confirm
 
 console = Console()
 
-def find_backup_file(database, phase=None, group=None, backup_dir='backups'):
+def find_backup_file(database, message, backup_dir='backups'):
     """
-    Finds the most recent backup file based on the database, phase, and group.
+    Searches for backup file with the specified database name and optional message in the filename.
     """
-    # Generate the expected filename pattern
-    pattern = f"{database}_{phase or '*'}_{group or '*'}_*.bak"
     backup_dir = os.path.join(os.getcwd(), backup_dir)
     
     # List all matching files in the backup directory
@@ -24,7 +22,8 @@ def find_backup_file(database, phase=None, group=None, backup_dir='backups'):
     ]
     
     # Filter files based on the pattern
-    filtered_files = [f for f in matching_files if f.startswith(f"{database}_{phase or ''}_{group or ''}")]
+    filtered_files = [f for f in matching_files if f"{message}" in f.lower()]
+    # filtered_files = [f for f in matching_files if f.startswith(f"{database}_{phase or ''}_{group or ''}")]
     
     # If exact match found, return the latest one based on date in the filename
     if filtered_files:
@@ -90,8 +89,7 @@ def backup_db(options):
 def restore_db(options):
     server = options.get('server')
     database = options.get('database')
-    phase = options.get('phase')
-    group = options.get('group')
+    message = options.get('message')
     backup_dir = options.get('backup_dir', 'backups')
     manual = options.get('manual', False)
     virgin = options.get('virgin', False)
@@ -104,9 +102,9 @@ def restore_db(options):
         print("Missing database parameter.")
         return
 
-    console.status(
-        f"[yellow]Looking for backup file for database: {database}, phase: {phase}, group: {group}...[/yellow]"
-        )
+    # console.status(
+    #     f"[yellow]Looking for backup file for database: {database}, phase: {phase}, group: {group}...[/yellow]"
+    #     )
 
     if virgin:
         backup_file = r"C:\LocalConv\_virgin\SADatabase\SA 2024-12-04.bak"
@@ -119,7 +117,7 @@ def restore_db(options):
             return
     else:
         # Find the backup file based on provided options
-        backup_file = find_backup_file(database, phase, group, backup_dir)
+        backup_file = find_backup_file(database, message, backup_dir)
 
         if not backup_file:
             console.print("[yellow]No backup file found matching the specified criteria. Please select the .bak backup file manually.[/yellow]")
