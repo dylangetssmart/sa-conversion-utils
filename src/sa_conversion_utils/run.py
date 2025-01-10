@@ -30,7 +30,7 @@ def exec_conv(options):
     password = options.get('password')
     input_dir = options.get('input')
     backup = options.get('backup', False)
-    skip = options.get('skip', False)
+    dev = options.get('dev', False)
     debug = options.get('debug', False)
     run_all = options.get('all', False)
     vanilla = options.get('vanilla', False)
@@ -53,12 +53,18 @@ def exec_conv(options):
             scripts = [file for file in os.listdir(sql_dir) if file.lower().endswith('.sql')]
 
             # The skip flag allows individual scripts to be skipped if the filename contains "skip"
-            if skip:
-                scripts = [file for file in scripts if '_skip_' not in file.lower()]
+            # if skip:
+            #     scripts = [file for file in scripts if '_skip_' not in file.lower()]
 
             # For a vanilla conversion, only run scripts prefixed with "std"
             if vanilla:
                 scripts = [file for file in scripts if '_std_' in file.lower()]
+
+            # If dev = true, include scripts with "_dev_" in the filename
+            if dev:
+                scripts = [file for file in scripts if '_dev_' in file.lower() or '_dev_' not in file.lower()]
+            else:
+                scripts = [file for file in scripts if '_dev_' not in file.lower()]
 
             if not scripts:
                 console.print(f"No SQL scripts found in {sql_dir}.", style="bold red")
@@ -67,7 +73,7 @@ def exec_conv(options):
             console.print(f"Error reading SQL scripts in {sql_dir}: {str(e)}", style="bold red")
             continue
 
-        if not Confirm.ask(f"Run [bold blue]{sql_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow] (skip={skip}, debug={debug})?"):
+        if not Confirm.ask(f"Run [bold blue]{sql_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow] (dev={dev}, debug={debug})?"):
             console.print(f"[bold red]Skipping {sql_dir}[/bold red]")
             continue
 
