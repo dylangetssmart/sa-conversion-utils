@@ -46,12 +46,18 @@ def clean_file(file_path, encoding):
 	return temp_file.name
 
 def read_csv_with_fallback(file_path):
+
+	# Skip empty files
+	if os.path.getsize(file_path) == 0:
+		console.print(f"[yellow]Skipping empty file: {file_path}")
+		return
+	
 	# Detect encoding of the file
-	# detected_encoding = detect_encoding(file_path)
+	detected_encoding = detect_encoding(file_path)
 
 	# Clean the file of null bytes
-	# cleaned_file = clean_file(file_path, detected_encoding)
-	cleaned_file = clean_file(file_path, 'utf-8')
+	cleaned_file = clean_file(file_path, detected_encoding)
+	# cleaned_file = clean_file(file_path, 'utf-8')
 
 	all_encodings = encodings
 	# all_encodings = [detected_encoding] + encodings
@@ -157,13 +163,13 @@ def main(options):
 	if os.path.isdir(input_path):
 		data_files = [
 			os.path.join(input_path, f) for f in os.listdir(input_path)
-			if f.lower().endswith(('.csv', '.txt', '.exp')) and f != 'import_log.txt'
+			if f.lower().endswith(('.csv', '.txt', '.exp')) and f != 'import_log.txt' and os.path.getsize(os.path.join(input_path, f)) > 0
 		]
 		if not data_files:
 			console.print(f"[yellow]No CSV or TXT files found in the directory: {input_path}")
 			return
 	elif os.path.isfile(input_path):
-		if input_path.lower().endswith(('.csv', '.txt', '.exp')):
+		if input_path.lower().endswith(('.csv', '.txt', '.exp')) and os.path.getsize(input_path) > 0:
 			data_files = [input_path]
 		else:
 			console.print(f"[yellow]The specified file is not a CSV or TXT: {input_path}")
