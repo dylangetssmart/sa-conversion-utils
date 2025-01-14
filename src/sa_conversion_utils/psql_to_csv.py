@@ -47,7 +47,7 @@ def fetch_tables(hostname, database, username):
     tables_file = os.path.join(data_dir, "tables.txt")
     # tables_file = "tables.txt"
     command = ["psql", "-h", hostname, "-d", database, "-U", username, "-c", 
-               "copy (select table_name from information_schema.tables where table_schema='public') to STDOUT;"]
+               "copy (select table_name from information_schema.tables where table_schema='public' and table_type='BASE TABLE') to STDOUT;"]
     
     try:
         with open(tables_file, 'w') as f:
