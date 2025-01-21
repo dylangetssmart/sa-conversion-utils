@@ -62,9 +62,9 @@ def exec_conv(options):
 
             # If dev = true, include scripts with "_dev_" in the filename
             if dev:
-                scripts = [file for file in scripts if '_dev_' in file.lower() or '_dev_' not in file.lower()]
+                scripts = [file for file in scripts if 'dev_' in file.lower() or 'dev_' not in file.lower()]
             else:
-                scripts = [file for file in scripts if '_dev_' not in file.lower()]
+                scripts = [file for file in scripts if 'dev_' not in file.lower()]
 
             if not scripts:
                 console.print(f"No SQL scripts found in {sql_dir}.", style="bold red")
