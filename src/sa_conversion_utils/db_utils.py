@@ -62,7 +62,7 @@ def backup_db(options):
     timestamp = datetime.now().strftime('%Y-%m-%d')
 
     if message:
-        filename = f"{database}_{message}_{timestamp}.bak"
+        filename = f"{database}_{timestamp}_{message}.bak"
     else:
         filename = f"{database}_{timestamp}.bak"
 
