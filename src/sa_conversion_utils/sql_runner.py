@@ -49,15 +49,15 @@ def sql_runner(script_path: str, server: str, database: str, script_task, progre
         else:
             print(f"[green]PASS: {script_name} in {minutes:.0f}m {seconds:.0f}s")
 
-        log_script_result(script_name, result_output, success=True)
+        # log_script_result(script_name, result_output, success=True)
 
     except subprocess.CalledProcessError as e:
         error_output = e.stdout + e.stderr if e.stdout or e.stderr else str(e)
         
-        with open(output_file_path, 'w') as output_file:
-            output_file.write(error_output)
+        # with open(output_file_path, 'w') as output_file:
+        #     output_file.write(error_output)
         
-        log_script_result(script_name, f'Error Output:\n{error_output}', success=False)
+        # log_script_result(script_name, f'Error Output:\n{error_output}', success=False)
 
         if progress:
             progress.console.print(f"[red]ERR: {script_name}")
