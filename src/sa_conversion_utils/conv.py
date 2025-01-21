@@ -238,29 +238,29 @@ def main():
     Command: run
     """
     run_parser = subparsers.add_parser('run', help='Run SQL scripts')
-    run_subparsers = run_parser.add_subparsers(title="run subcommands", dest="subcommand")
+    # run_subparsers = run_parser.add_subparsers(title="run subcommands", dest="subcommand")
     run_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
     run_parser.add_argument('--dev', action='store_true', help='Include scripts prefixed with _dev_, which are skipped by default')
     run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
     run_parser.set_defaults(func=run_common)
-    run_subparsers.required = False
+    # run_subparsers.required = False
 
     # Subcommand: run > conv
-    conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')
-    conv_parser.add_argument("--type", type=str, choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla"], help="Type of conversion")
-    conv_parser.set_defaults(func=run_conv)
+    # conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')
+    # conv_parser.add_argument("--type", type=str, choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla"], help="Type of conversion")
+    # conv_parser.set_defaults(func=run_conv)
 
     # Subcommand: run > map
     # map_parser = run_subparsers.add_parser('map', help='Execute mapping operations')
     # map_parser.set_defaults(func=run_map)
 
     # Subcommand: run > init
-    init_parser = run_subparsers.add_parser('init', help='Initialize configurations')
-    init_parser.set_defaults(func=run_init)
+    # init_parser = run_subparsers.add_parser('init', help='Initialize configurations')
+    # init_parser.set_defaults(func=run_init)
 
     # Subcommand: run > post
-    post_parser = run_subparsers.add_parser('post', help='Cleanup scripts')
-    post_parser.set_defaults(func=run_post)
+    # post_parser = run_subparsers.add_parser('post', help='Cleanup scripts')
+    # post_parser.set_defaults(func=run_post)
 
     # Arguments
     # run_parser.add_argument('-ph','--phase',choices=['map', 'conv', 'post', 'test'],metavar='phase',help='The phase of SQL scripts to run: {map, conv, post}')
