@@ -1,5 +1,6 @@
 # External
 import os
+import logging
 import re
 import csv
 from datetime import datetime
@@ -19,6 +20,8 @@ try:
 	from .utilities.logger import log_message
 	from .db_utils import backup_db
 	from .utilities.create_engine import main as create_engine
+	from .utilities.collect_files import collect_files
+	from .utilities.detect_delimiter import detect_delimiter
 except ImportError:
 	# Absolute import for standalone context
 	from sa_conversion_utils.utilities.count_lines import count_lines_mmap
@@ -26,26 +29,55 @@ except ImportError:
 	from sa_conversion_utils.utilities.logger import log_message
 	from sa_conversion_utils.db_utils import backup_db
 	from sa_conversion_utils.utilities.create_engine import main as create_engine
+	from sa_conversion_utils.utilities.collect_files import collect_files
+	from sa_conversion_utils.utilities.detect_delimiter import detect_delimiter
 
 console = Console()
-encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
+encodings = ['ISO-8859-1', 'latin1', 'cp1252', 'utf-8']
+# encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
 
-def replace_newlines_with_pipe(df):
-    # Apply replacement for all string columns in the DataFrame using map on each column
-    return df.apply(lambda col: col.map(lambda x: re.sub(r'\r\n|\n', '|', x) if isinstance(x, str) else x))
+logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+
+# def replace_newlines_with_pipe(df):
+#     # Apply replacement for all string columns in the DataFrame using map on each column
+#     return df.apply(lambda col: col.map(lambda x: re.sub(r'\r\n|\n', '|', x) if isinstance(x, str) else x))
 
 def clean_file(file_path, encoding):
-	with open(file_path, 'r', encoding='ISO-8859-1') as file:
-		data = file.read()
+	"""
+    Attempts to read and clean the file by handling encoding issues.
+    If cleaning succeeds, the cleaned file content is returned.
+    If an error occurs, logs the error and returns None.
+    """
 	
-	cleaned_data = data.replace('\x00', '')
-	temp_file = NamedTemporaryFile(delete=False, mode='w', encoding=encoding)
-	temp_file.write(cleaned_data)
-	temp_file.close()
+	try:
+		with open(file_path, 'r', encoding=encoding) as file:
+		# with open(file_path, 'r', encoding='ISO-8859-1') as file:
+			data = file.read()
+	
+		cleaned_data = data.replace('\x00', '')
+		cleaned_data = cleaned_data.replace('\0', '')  # Remove any null characters
+	
+		logging.info(f"Successfully cleaned {file_path} with encoding {encoding}")
+		return cleaned_data
+	
+	except UnicodeDecodeError as e:
+		logging.error(f"UnicodeDecodeError: Unable to decode {file_path} with encoding {encoding}. Error: {str(e)}")
+		return None
+	except Exception as e:
+		logging.error(f"An unexpected error occurred while cleaning the file {file_path}. Error: {str(e)}")
+		return None
 
-	return temp_file.name
+	# temp_file = NamedTemporaryFile(delete=False, mode='w', encoding=encoding)
+	# temp_file.write(cleaned_data)
+	# temp_file.close()
+
+	# return temp_file.name
 
 def read_csv_with_fallback(file_path):
+	"""
+    Attempts to read the file using multiple encodings and cleans it.
+    Returns the cleaned data, encoding used, and delimiter if successful.
+    """
 
 	# Skip empty files
 	if os.path.getsize(file_path) == 0:
@@ -56,40 +88,47 @@ def read_csv_with_fallback(file_path):
 	detected_encoding = detect_encoding(file_path)
 
 	# Clean the file of null bytes
-	cleaned_file = clean_file(file_path, detected_encoding)
+	# cleaned_file = clean_file(file_path, detected_encoding)
 	# cleaned_file = clean_file(file_path, 'utf-8')
 
-	all_encodings = encodings
-	# all_encodings = [detected_encoding] + encodings
+	all_encodings = [detected_encoding] + encodings
+	# all_encodings = encodings
 
+	data = clean_file(file_path, detected_encoding)
 	for encoding in all_encodings:
-		try:
-			# Detect delimiter from the first line with the given encoding
-			with open(cleaned_file, 'r', encoding=encoding) as file:
-				sample = file.readline()
-				sniffer = csv.Sniffer()
-				try:
-					dialect = sniffer.sniff(sample)
-					delimiter = dialect.delimiter
-				except csv.Error:
-					delimiter = ','  # Default to comma if detection fails
-				# console.print(f"[blue]Detected delimiter '{delimiter}' for {os.path.basename(file_path)}")
+		if data:
+			try:
+				# Detect delimiter from the first line with the given encoding
+				delimiter = detect_delimiter(file_path, encoding)
+				# with open(cleaned_file, 'r', encoding=encoding) as file:
+				# 	sample = file.readline()
+				# 	sniffer = csv.Sniffer()
+				# 	try:
+				# 		dialect = sniffer.sniff(sample)
+				# 		delimiter = dialect.delimiter
+				# 	except csv.Error:
+				# 		delimiter = ','  # Default to comma if detection fails
+					# console.print(f"[blue]Detected delimiter '{delimiter}' for {os.path.basename(file_path)}")
 
-			# Read the file into DataFrame with detected settings
-			df = pd.read_csv(
-				cleaned_file,
-				# file_path,
-				encoding=encoding,
-				delimiter=delimiter,
-				low_memory=False
-				# keep_default_na=False
-			)
-			return df, encoding, delimiter
+				# Read the file into DataFrame with detected settings
+				df = pd.read_csv(
+					data,
+					# cleaned_file,
+					# file_path,
+					encoding=encoding,
+					delimiter=delimiter,
+					low_memory=False,
+					dtype=str
+					# keep_default_na=False
+				)
+				return df, encoding
 
-		except (UnicodeDecodeError, pd.errors.ParserError) as e:
-			console.print(f"[yellow]Error reading {os.path.basename(file_path)} with encoding {encoding}: {e}")
-
-	raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
+			except (UnicodeDecodeError, pd.errors.ParserError) as e:
+				console.print(f"[yellow]Error reading {os.path.basename(file_path)} with encoding {encoding}: {e}")
+				break
+	# raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
+	logging.error(f"Failed to read file {file_path} with all fallback encodings.")
+	return None, None, None  # Return None if all attempts fail
 
 def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file, if_exists='append'):
 	# print(log_file)
@@ -102,7 +141,7 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 		start_time = datetime.now().strftime('%Y-%m-%d %H:%M')
 		log_message(log_file, f"Begin import: {start_time}")
 
-	if not df.empty:
+	if df is not None and not df.empty:
 		for i, chunk in enumerate(range(0, len(df), chunk_size)):
 			df_chunk = df.iloc[chunk:chunk + chunk_size]
 			try:
@@ -133,7 +172,7 @@ def convert(engine, file_path, table_name, progress, overall_task, file_task, ch
 			log_message(log_file, f"PASS: {file_name} | {encoding}")
 
 	else:
-		progress.console.print(f"[yellow]SKIP: {file_name} is empty.")
+		# progress.console.print(f"[yellow]SKIP: {file_name} is empty.")
 		if log_file:
 			log_message(log_file, f"SKIP: {file_name} | {encoding} | empty file")
 
@@ -159,24 +198,25 @@ def main(options):
 	data_files = []
 	file_summary = {}
 
-	# Collect data files for import
-	if os.path.isdir(input_path):
-		data_files = [
-			os.path.join(input_path, f) for f in os.listdir(input_path)
-			if f.lower().endswith(('.csv', '.txt', '.exp')) and f != 'import_log.txt' and os.path.getsize(os.path.join(input_path, f)) > 0
-		]
-		if not data_files:
-			console.print(f"[yellow]No CSV or TXT files found in the directory: {input_path}")
-			return
-	elif os.path.isfile(input_path):
-		if input_path.lower().endswith(('.csv', '.txt', '.exp')) and os.path.getsize(input_path) > 0:
-			data_files = [input_path]
-		else:
-			console.print(f"[yellow]The specified file is not a CSV or TXT: {input_path}")
-			return
-	else:
-		console.print(f"[red]Invalid input path: {input_path}")
-		return
+	data_files, message = collect_files(input_path, console)
+	# # Collect data files for import
+	# if os.path.isdir(input_path):
+	# 	data_files = [
+	# 		os.path.join(input_path, f) for f in os.listdir(input_path)
+	# 		if f.lower().endswith(('.csv', '.txt', '.exp')) and f != 'import_log.txt' and os.path.getsize(os.path.join(input_path, f)) > 0
+	# 	]
+	# 	if not data_files:
+	# 		console.print(f"[yellow]No CSV or TXT files found in the directory: {input_path}")
+	# 		return
+	# elif os.path.isfile(input_path):
+	# 	if input_path.lower().endswith(('.csv', '.txt', '.exp')) and os.path.getsize(input_path) > 0:
+	# 		data_files = [input_path]
+	# 	else:
+	# 		console.print(f"[yellow]The specified file is not a CSV or TXT: {input_path}")
+	# 		return
+	# else:
+	# 	console.print(f"[red]Invalid input path: {input_path}")
+	# 	return
 
 	# Create file summary without reading
 	for data_file in data_files:

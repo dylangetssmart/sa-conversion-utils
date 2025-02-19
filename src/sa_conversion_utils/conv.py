@@ -51,9 +51,6 @@ def backup(args):
 ##############################################################################
 run
 """
-# def run_map(args):
-#     if Confirm.ask("[bold green]Run scripts in sql/map[/bold green]"):
-#         run_common(args, 'sql/map')
 
 def run_conv(args):
     if not args.type:
@@ -114,19 +111,6 @@ def run_common(args, input_path = None, is_all = False, vanilla = False):
         'vanilla': vanilla
     }
     exec_conv(options)
-# def run(args):
-    
-#     options = {
-#         'server': args.server or SERVER,
-#         'database': args.database or SA_DB,
-#         'username': args.username,
-#         'password': args.password,
-#         'backup': args.backup,
-#         'skip': args.skip,
-#         'debug': args.debug,
-#         'input': args.input or f'sql/{args.command}'
-#     }
-#     exec_conv(options)
 
 def restore(args):
     options = {
@@ -136,13 +120,6 @@ def restore(args):
         'virgin': args.virgin
     }
     restore_db(options)
-
-def create(args):
-    options = {
-        'server': args.server or SERVER,
-        'name': args.name
-    }
-    create_db(options)
 
 def encrypt(args):
     exe_path = r"C:\LocalConv\_utils\SSNEncryption\SSNEncryption.exe"
