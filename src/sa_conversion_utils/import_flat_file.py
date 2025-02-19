@@ -34,13 +34,9 @@ except ImportError:
 
 console = Console()
 encodings = ['ISO-8859-1', 'latin1', 'cp1252', 'utf-8']
-# encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 
-# def replace_newlines_with_pipe(df):
-#     # Apply replacement for all string columns in the DataFrame using map on each column
-#     return df.apply(lambda col: col.map(lambda x: re.sub(r'\r\n|\n', '|', x) if isinstance(x, str) else x))
 
 def clean_file(file_path, encoding):
 	"""
@@ -48,7 +44,6 @@ def clean_file(file_path, encoding):
     If cleaning succeeds, the cleaned file content is returned.
     If an error occurs, logs the error and returns None.
     """
-	
 	try:
 		with open(file_path, 'r', encoding=encoding) as file:
 		# with open(file_path, 'r', encoding='ISO-8859-1') as file:
@@ -61,17 +56,11 @@ def clean_file(file_path, encoding):
 		return cleaned_data
 	
 	except UnicodeDecodeError as e:
-		logging.error(f"UnicodeDecodeError: Unable to decode {file_path} with encoding {encoding}. Error: {str(e)}")
+		# logging.error(f"UnicodeDecodeError: Unable to decode {file_path} with encoding {encoding}. Error: {str(e)}")
 		return None
 	except Exception as e:
-		logging.error(f"An unexpected error occurred while cleaning the file {file_path}. Error: {str(e)}")
+		# logging.error(f"An unexpected error occurred while cleaning the file {file_path}. Error: {str(e)}")
 		return None
-
-	# temp_file = NamedTemporaryFile(delete=False, mode='w', encoding=encoding)
-	# temp_file.write(cleaned_data)
-	# temp_file.close()
-
-	# return temp_file.name
 
 def read_csv_with_fallback(file_path):
 	"""
@@ -79,17 +68,11 @@ def read_csv_with_fallback(file_path):
     Returns the cleaned data, encoding used, and delimiter if successful.
     """
 
-	# Skip empty files
 	if os.path.getsize(file_path) == 0:
 		console.print(f"[yellow]Skipping empty file: {file_path}")
 		return
 	
-	# Detect encoding of the file
 	detected_encoding = detect_encoding(file_path)
-
-	# Clean the file of null bytes
-	# cleaned_file = clean_file(file_path, detected_encoding)
-	# cleaned_file = clean_file(file_path, 'utf-8')
 
 	all_encodings = [detected_encoding] + encodings
 	# all_encodings = encodings
@@ -98,8 +81,12 @@ def read_csv_with_fallback(file_path):
 	for encoding in all_encodings:
 		if data:
 			try:
-				# Detect delimiter from the first line with the given encoding
 				delimiter = detect_delimiter(file_path, encoding)
+
+				# Write cleaned data to a temporary file
+				with NamedTemporaryFile(delete=False, mode='w', encoding=encoding) as temp_file:
+					temp_file.write(data)
+					temp_file_path = temp_file.name
 				# with open(cleaned_file, 'r', encoding=encoding) as file:
 				# 	sample = file.readline()
 				# 	sniffer = csv.Sniffer()
@@ -112,7 +99,8 @@ def read_csv_with_fallback(file_path):
 
 				# Read the file into DataFrame with detected settings
 				df = pd.read_csv(
-					data,
+					temp_file_path,
+					# data,
 					# cleaned_file,
 					# file_path,
 					encoding=encoding,
@@ -121,13 +109,13 @@ def read_csv_with_fallback(file_path):
 					dtype=str
 					# keep_default_na=False
 				)
-				return df, encoding
+				return df, encoding, delimiter
 
 			except (UnicodeDecodeError, pd.errors.ParserError) as e:
 				console.print(f"[yellow]Error reading {os.path.basename(file_path)} with encoding {encoding}: {e}")
 				break
 	# raise ValueError(f"Unable to read the file {os.path.basename(file_path)} with detected or fallback encodings.")
-	logging.error(f"Failed to read file {file_path} with all fallback encodings.")
+	# logging.error(f"Failed to read file {file_path} with all fallback encodings.")
 	return None, None, None  # Return None if all attempts fail
 
 def convert(engine, file_path, table_name, progress, overall_task, file_task, chunk_size, log_file, if_exists='append'):
