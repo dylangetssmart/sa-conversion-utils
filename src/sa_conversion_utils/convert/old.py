@@ -15,19 +15,19 @@ from rich.table import Table
 
 # Internal imports
 try:
-	from .utilities.count_lines import count_lines_mmap
-	from .utilities.detect_encoding import detect_encoding
-	from .utilities.logger import log_message
-	from .db_utils import backup_db
-	from .utilities.create_engine import main as create_engine
-	from .utilities.collect_files import collect_files
-	from .utilities.detect_delimiter import detect_delimiter
+	from ..utilities.count_lines import count_lines_mmap
+	from ..utilities.detect_encoding import detect_encoding
+	from ..logging.logger import log_message
+	from ..database.db_utils import backup_db
+	from ..utilities.create_engine import main as create_engine
+	from ..utilities.collect_files import collect_files
+	from ..utilities.detect_delimiter import detect_delimiter
 except ImportError:
 	# Absolute import for standalone context
 	from sa_conversion_utils.utilities.count_lines import count_lines_mmap
 	from sa_conversion_utils.utilities.detect_encoding import detect_encoding
-	from sa_conversion_utils.utilities.logger import log_message
-	from sa_conversion_utils.db_utils import backup_db
+	from sa_conversion_utils.logging.logger import log_message
+	from sa_conversion_utils.database.db_utils import backup_db
 	from sa_conversion_utils.utilities.create_engine import main as create_engine
 	from sa_conversion_utils.utilities.collect_files import collect_files
 	from sa_conversion_utils.utilities.detect_delimiter import detect_delimiter

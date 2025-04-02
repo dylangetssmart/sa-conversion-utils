@@ -9,82 +9,82 @@ from rich.prompt import Confirm
 
 console = Console()
 
-def find_backup_file(database, message, backup_dir='backups'):
-    """
-    Searches for backup file with the specified database name and optional message in the filename.
-    """
-    backup_dir = os.path.join(os.getcwd(), backup_dir)
+# def find_backup_file(database, message, backup_dir='backups'):
+#     """
+#     Searches for backup file with the specified database name and optional message in the filename.
+#     """
+#     backup_dir = os.path.join(os.getcwd(), backup_dir)
     
-    # List all matching files in the backup directory
-    matching_files = [
-        f for f in os.listdir(backup_dir)
-        if os.path.isfile(os.path.join(backup_dir, f)) and f.startswith(f"{database}_") and f.endswith(".bak")
-    ]
+#     # List all matching files in the backup directory
+#     matching_files = [
+#         f for f in os.listdir(backup_dir)
+#         if os.path.isfile(os.path.join(backup_dir, f)) and f.startswith(f"{database}_") and f.endswith(".bak")
+#     ]
     
-    # Filter files based on the pattern
-    filtered_files = [f for f in matching_files if f"{message}" in f.lower()]
-    # filtered_files = [f for f in matching_files if f.startswith(f"{database}_{phase or ''}_{group or ''}")]
+#     # Filter files based on the pattern
+#     filtered_files = [f for f in matching_files if f"{message}" in f.lower()]
+#     # filtered_files = [f for f in matching_files if f.startswith(f"{database}_{phase or ''}_{group or ''}")]
     
-    # If exact match found, return the latest one based on date in the filename
-    if filtered_files:
-        filtered_files.sort(reverse=True)  # Sort files by latest date
-        return os.path.join(backup_dir, filtered_files[0])
+#     # If exact match found, return the latest one based on date in the filename
+#     if filtered_files:
+#         filtered_files.sort(reverse=True)  # Sort files by latest date
+#         return os.path.join(backup_dir, filtered_files[0])
     
-    # If no files match, return None
-    return None
+#     # If no files match, return None
+#     return None
 
-def select_bak_backup_file():
-    root = tk.Tk()
-    root.withdraw()
-    root.wm_attributes('-topmost', 1)
-    initial_dir = os.path.join(os.getcwd(), 'backups')
-    backup_file = filedialog.askopenfile(
-        title="Select the .bak backup_file to restore",
-        filetypes=[("SQL Backup backup_files", "*.bak")],
-        initialdir=initial_dir
-    )
-    if backup_file:
-        return backup_file.name  # Return the path to the file
-    return None
+# def select_bak_backup_file():
+#     root = tk.Tk()
+#     root.withdraw()
+#     root.wm_attributes('-topmost', 1)
+#     initial_dir = os.path.join(os.getcwd(), 'backups')
+#     backup_file = filedialog.askopenfile(
+#         title="Select the .bak backup_file to restore",
+#         filetypes=[("SQL Backup backup_files", "*.bak")],
+#         initialdir=initial_dir
+#     )
+#     if backup_file:
+#         return backup_file.name  # Return the path to the file
+#     return None
 
-def backup_db(options):
-    server = options.get('server')
-    database = options.get('database')
-    output_path = options.get('output')
-    message = options.get('message')
+# def backup_db(options):
+#     server = options.get('server')
+#     database = options.get('database')
+#     output_path = options.get('output')
+#     message = options.get('message')
     
-    if not server:
-        raise ValueError("Missing SQL Server argument")
-    if not database:
-        raise ValueError("Missing database argument")
+#     if not server:
+#         raise ValueError("Missing SQL Server argument")
+#     if not database:
+#         raise ValueError("Missing database argument")
 
-    # Create the backup filename
-    timestamp = datetime.now().strftime('%Y-%m-%d')
+#     # Create the backup filename
+#     timestamp = datetime.now().strftime('%Y-%m-%d')
 
-    if message:
-        filename = f"{database}_{timestamp}_{message}.bak"
-    else:
-        filename = f"{database}_{timestamp}.bak"
+#     if message:
+#         filename = f"{database}_{timestamp}_{message}.bak"
+#     else:
+#         filename = f"{database}_{timestamp}.bak"
 
-    backup_path = os.path.join(output_path, filename)
+#     backup_path = os.path.join(output_path, filename)
 
-    # Ensure the backup directory exists
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+#     # Ensure the backup directory exists
+#     if not os.path.exists(output_path):
+#         os.makedirs(output_path)
 
-    # Confirm the backup operation
-    if Confirm.ask(f'Backup {server}.{database} to {backup_path}?'):
-        backup_command = (
-            f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path}' "
-            f"WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
-        )
+#     # Confirm the backup operation
+#     if Confirm.ask(f'Backup {server}.{database} to {backup_path}?'):
+#         backup_command = (
+#             f"sqlcmd -S {server} -Q \"BACKUP DATABASE [{database}] TO DISK = '{backup_path}' "
+#             f"WITH FORMAT, INIT, NAME = '{database} Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10\""
+#         )
 
-        try:
-            with console.status('Backing up database...'):
-                subprocess.run(backup_command, check=True, shell=True)
-            console.print(f"[green]Backup complete: {backup_path}.")
-        except subprocess.CalledProcessError as error:
-            console.print(f"[red]Error backing up database {database}: {error}")
+#         try:
+#             with console.status('Backing up database...'):
+#                 subprocess.run(backup_command, check=True, shell=True)
+#             console.print(f"[green]Backup complete: {backup_path}.")
+#         except subprocess.CalledProcessError as error:
+#             console.print(f"[red]Error backing up database {database}: {error}")
 
 def restore_db(options):
     server = options.get('server')
@@ -167,18 +167,18 @@ def restore_db(options):
         finally:
             console.print(f"[green]Restore operation completed for {server}.{database}[/green]")
 
-def create_db(options):
-    server = options.get('server')
-    db_name = options.get('name')
+# def create_db(options):
+#     server = options.get('server')
+#     db_name = options.get('name')
 
-    try:
-        subprocess.run(
-            ['sqlcmd', '-S', server, '-Q', f"CREATE DATABASE {db_name}", '-b'],
-            check=True
-        )
-        console.print(f"[green]Succesfully created database {db_name}.")
-    except subprocess.CalledProcessError:
-        console.print(f"[red]Failed to create database {db_name}.")
+#     try:
+#         subprocess.run(
+#             ['sqlcmd', '-S', server, '-Q', f"CREATE DATABASE {db_name}", '-b'],
+#             check=True
+#         )
+#         console.print(f"[green]Succesfully created database {db_name}.")
+#     except subprocess.CalledProcessError:
+#         console.print(f"[red]Failed to create database {db_name}.")
 
     # cmd = f"sqlcmd" '-S,', {server}, '-Q', f"CREATE DATABASE {db_name}"
     # result = subprocess.run(cmd, shell=True, capture_output=True, text=True)

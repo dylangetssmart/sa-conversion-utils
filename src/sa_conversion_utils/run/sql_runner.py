@@ -2,7 +2,7 @@ import subprocess
 import os
 import time
 from datetime import datetime
-from .utilities.logger import log_message, log_error
+from ..logging.logger import log_message, log_error
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 
 BASE_DIR = os.getcwd()

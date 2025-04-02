@@ -1,10 +1,14 @@
 import os
 from dotenv import load_dotenv
-from sa_conversion_utils.db_utils import backup_db
-from sa_conversion_utils.sql_runner import sql_runner
+from sa_conversion_utils.database.db_utils import backup_db
+from sa_conversion_utils.run.sql_runner import sql_runner
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 from rich.prompt import Confirm, Prompt
+
+"""
+This script collects applicable .sql scripts from the specified directory and passes them into sql_runner.py
+"""
 
 BASE_DIR = os.getcwd()
 load_dotenv(os.path.join(BASE_DIR, '.env'))
@@ -57,8 +61,8 @@ def exec_conv(options):
             #     scripts = [file for file in scripts if '_skip_' not in file.lower()]
 
             # For a vanilla conversion, only run scripts prefixed with "std"
-            if vanilla:
-                scripts = [file for file in scripts if '_std_' in file.lower()]
+            # if vanilla:
+            #     scripts = [file for file in scripts if '_std_' in file.lower()]
 
             # If dev = true, include scripts with "_dev_" in the filename
             if dev:

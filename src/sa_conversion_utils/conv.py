@@ -11,12 +11,12 @@ from rich.prompt import Confirm, Prompt
 
 # Module imports
 # from sql_runner import sql_runner
-from sa_conversion_utils.db_utils import restore_db, backup_db, create_db
-from sa_conversion_utils.run import exec_conv
-from sa_conversion_utils.mapping import main as generate_mapping
-from sa_conversion_utils.import_flat_file2 import main as import_flat_file
-from sa_conversion_utils.psql_to_csv import main as convert_psql_to_csv
-from .utilities.migration_logger import log_migration_step
+from sa_conversion_utils.database.db_utils import restore_db, backup_db, create_db
+from sa_conversion_utils.run.run import exec_conv
+from sa_conversion_utils.utilities.mapping import main as generate_mapping
+from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
+from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
+from .logging.migration_logger import log_migration_step
 
 console = Console()
 
@@ -52,45 +52,45 @@ def backup(args):
 run
 """
 
-def run_conv(args):
-    if not args.type:
-        args.type = Prompt.ask(
-            "[bold green]Select script group[/bold green]",
-            choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla", "exit"],
-            default="contact"
-        )
+# def run_conv(args):
+#     if not args.type:
+#         args.type = Prompt.ask(
+#             "[bold green]Select script group[/bold green]",
+#             choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla", "exit"],
+#             default="contact"
+#         )
 
-    match args.type:
-        case 'exit':
-            console.print("[bold red]Exiting[/bold red]")
-            return
-        case 'all':
-            args.all = True
-            args.vanilla = False
-            # input_path = f"sql\\conv\\"
-            input_path = os.path.join(SQL_DIR, 'conv')
-            if Confirm.ask("[bold green]Run all conversion scripts[/bold green]"):
-                run_common(args, input_path, is_all = True)
-        case 'vanilla':
-            args.vanilla = True
-            args.all = True
-            # input_path = f"sql\\conv\\"
-            input_path = os.path.join(SQL_DIR, 'conv')
-            if Confirm.ask("[bold green]Run vanilla conversion[/bold green]"):                
-                run_common(args, input_path, is_all = True)
-        case _:
-            # input_path = f"sql\\conv\\{args.type}"
-            input_path = os.path.join(SQL_DIR, 'conv', f'{args.type}')
-            if Confirm.ask(f"[bold green]Run {args.type} scripts[/bold green]"):
-                run_common(args, input_path, is_all = False)
+#     match args.type:
+#         case 'exit':
+#             console.print("[bold red]Exiting[/bold red]")
+#             return
+#         case 'all':
+#             args.all = True
+#             args.vanilla = False
+#             # input_path = f"sql\\conv\\"
+#             input_path = os.path.join(SQL_DIR, 'conv')
+#             if Confirm.ask("[bold green]Run all conversion scripts[/bold green]"):
+#                 run_common(args, input_path, is_all = True)
+#         case 'vanilla':
+#             args.vanilla = True
+#             args.all = True
+#             # input_path = f"sql\\conv\\"
+#             input_path = os.path.join(SQL_DIR, 'conv')
+#             if Confirm.ask("[bold green]Run vanilla conversion[/bold green]"):                
+#                 run_common(args, input_path, is_all = True)
+#         case _:
+#             # input_path = f"sql\\conv\\{args.type}"
+#             input_path = os.path.join(SQL_DIR, 'conv', f'{args.type}')
+#             if Confirm.ask(f"[bold green]Run {args.type} scripts[/bold green]"):
+#                 run_common(args, input_path, is_all = False)
 
-def run_init(args):
-    if Confirm.ask("[bold green]Run scripts in sql/init[/bold green]"):
-        run_common(args, 'sql/init')
+# def run_init(args):
+#     if Confirm.ask("[bold green]Run scripts in sql/init[/bold green]"):
+#         run_common(args, 'sql/init')
 
-def run_post(args):
-    if Confirm.ask("[bold green]Run scripts in sql/post[/bold green]"):
-        run_common(args, 'sql/post')
+# def run_post(args):
+#     if Confirm.ask("[bold green]Run scripts in sql/post[/bold green]"):
+#         run_common(args, 'sql/post')
 
 def run_common(args, input_path = None, is_all = False, vanilla = False):
     """Execute common logic for all commands."""
