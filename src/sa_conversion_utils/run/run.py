@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from sa_conversion_utils.database.db_utils import backup_db
+from sa_conversion_utils.database.backup import backup_db
 from sa_conversion_utils.run.sql_runner import sql_runner
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
@@ -27,7 +27,7 @@ def backup_database_helper(server, database):
         'message': message
     })
 
-def exec_conv(options):
+def run(options):
     server = options.get('server')
     database = options.get('database')
     username = options.get('username')

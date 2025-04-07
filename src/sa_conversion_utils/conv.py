@@ -11,8 +11,9 @@ from rich.prompt import Confirm, Prompt
 
 # Module imports
 # from sql_runner import sql_runner
-from sa_conversion_utils.database.db_utils import restore_db, backup_db, create_db
-from sa_conversion_utils.run.run import exec_conv
+from sa_conversion_utils.database.backup import backup_db
+from sa_conversion_utils.database.restore import restore_db
+from sa_conversion_utils.run.run import run
 from sa_conversion_utils.utilities.mapping import main as generate_mapping
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
@@ -40,7 +41,7 @@ def backup(args):
     options = {
         'server': args.server or SERVER,
         'database': args.database or SA_DB,
-        'output': args.output or os.path.join(os.getcwd(),'backups'),
+        'output': args.output or os.path.join(os.getcwd(),'_backups'),
         'message': args.message
         # 'phase': args.phase,
         # 'group': args.group
@@ -110,7 +111,7 @@ def run_common(args, input_path = None, is_all = False, vanilla = False):
         'all': is_all,
         'vanilla': vanilla
     }
-    exec_conv(options)
+    run(options)
 
 def restore(args):
     options = {
