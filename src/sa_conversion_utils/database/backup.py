@@ -1,38 +1,31 @@
 import os
-import sys
 import subprocess
-import tkinter as tk
 from datetime import datetime
-from tkinter import filedialog
 from rich.console import Console
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 
 console = Console()
 
-
 # https://learn.microsoft.com/en-us/sql/relational-databases/backup-restore/create-a-full-database-backup-sql-server?view=sql-server-ver16#TsqlProcedure
 # https://learn.microsoft.com/en-us/sql/t-sql/statements/backup-transact-sql?view=sql-server-ver16
-
 
 def backup_db(options):
     server = options.get('server')
     database = options.get('database')
     output_path = options.get('output')
-    message = options.get('message')
+    # message = options.get('message')
     
     if not server:
         raise ValueError("Missing SQL Server argument")
     if not database:
         raise ValueError("Missing database argument")
 
+    # Prompt for a message to include in the backup filename
+    message = Prompt.ask("Message to include in backup filename")
+
     # Create the backup filename
     timestamp = datetime.now().strftime('%Y-%m-%d')
-
-    if message:
-        filename = f"{database}_{message}_{timestamp}.bak"
-    else:
-        filename = f"{database}_{timestamp}.bak"
-
+    filename = f"{database}_{message}_{timestamp}.bak"
     backup_path = os.path.join(output_path, filename)
 
     # Ensure the backup directory exists
