@@ -1,27 +1,37 @@
 import subprocess
 import os
 import time
-from datetime import datetime
-from ..logging.logger import log_message, log_error
-from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
+import logging
 
+# Setup directories and logging
 BASE_DIR = os.getcwd()
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-datetime_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
-LOG_FILE = os.path.join(LOGS_DIR, f'error_log_{datetime_str}.txt')
+LOGS_DIR = os.path.join(BASE_DIR, '_logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+RUN_LOG = os.path.join(LOGS_DIR, 'run.log')
 
-def log_script_result(script_name: str, result_output: str, success: bool):
-    status = 'SUCCESS' if success else 'FAIL'
-    with open(LOG_FILE, 'a') as log_file:
-        log_message(log_file.name, f'{status} - {script_name}')
-        log_message(log_file.name, f'    Timestamp: {datetime.now().strftime("%Y-%m-%d_%H-%M")}')
-        log_message(log_file.name, result_output)
-        log_message(log_file.name, '---------------------------------------------------------------------------------------')
+# Configure logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-def sql_runner(script_path: str, server: str, database: str, script_task, progress, username=None, password=None):
+# File Handler (logs everything INFO and above)
+file_handler = logging.FileHandler(os.path.join(LOGS_DIR, "run.log"))
+file_handler.setLevel(logging.INFO)
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
+file_handler.setFormatter(file_formatter)
+
+# Console Handler (only ERROR and above)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.ERROR)
+console_formatter = logging.Formatter("%(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
+console_handler.setFormatter(console_formatter)
+
+# Attach handlers
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+def sql_runner(script_path: str, server: str, database: str, username=None, password=None):
     start_time = time.time()
     script_name = os.path.basename(script_path)
-    output_file_path = os.path.join(LOGS_DIR, f'{datetime_str}_{script_name}.out')
 
     # Build the command
     cmd = ['sqlcmd', '-S', server, '-d', database, '-i', script_path, '-b', '-h', '-1']
@@ -35,44 +45,44 @@ def sql_runner(script_path: str, server: str, database: str, script_task, progre
     try:
         result = subprocess.run(
             cmd,
-            capture_output=True, text=True, check=True
+            capture_output=True,
+            text=True,
+            check=True
         )
-
-        result_output = f'\n{result.stdout}' if result.stdout else ''
-        end_time = time.time()
-        minutes, seconds = divmod(end_time - start_time, 60)
-
-        if progress:
-            progress.console.print(f"[green]PASS: {script_name} in {minutes:.0f}m {seconds:.0f}s")
-            progress.update(script_task)
-            progress.remove_task(script_task)
-        else:
-            print(f"[green]PASS: {script_name} in {minutes:.0f}m {seconds:.0f}s")
-
-        # log_script_result(script_name, result_output, success=True)
+        duration = time.time() - start_time
+        output = result.stdout.strip() if result.stdout else "(No output)"
+        msg = f"PASS: {script_name} in {duration:.2f}s\n{output}"
+        logger.info(msg)
 
     except subprocess.CalledProcessError as e:
-        error_output = e.stdout + e.stderr if e.stdout or e.stderr else str(e)
-        
-        # with open(output_file_path, 'w') as output_file:
-        #     output_file.write(error_output)
-        
-        # log_script_result(script_name, f'Error Output:\n{error_output}', success=False)
+        duration = time.time() - start_time
+        output = (e.stdout or '') + (e.stderr or '')
+        output = output.strip() if output else str(e)
 
-        if progress:
-            progress.console.print(f"[red]ERR: {script_name}")
-            progress.update(script_task)
-            progress.remove_task(script_task)
-        else:
-            print(f"[red]ERR: {script_name}")
+        msg = f"FAIL: {script_name} in {duration:.2f}s\n{output}"
+        logger.error(msg)
 
-# Main block
+# For manual test runs
 if __name__ == "__main__":
-    script_path = input("Enter the path to the SQL script: ")
-    server = input("Enter the SQL Server name: ")
-    database = input("Enter the database name: ")
-    script_task = None
-    progress = None
+    # script_path = input("Enter the path to the SQL script: ")
+    # server = input("Enter the SQL Server name: ")
+    # database = input("Enter the database name: ")
+    # sql_runner(script_path, server, database)
+    import argparse
 
-    # Call the function
-    sql_runner(script_path, server, database, script_task, progress)
+    parser = argparse.ArgumentParser(description="Run a SQL script using sql_runner.")
+    parser.add_argument("script_path", help="Path to the .sql script")
+    parser.add_argument("server", help="SQL Server name")
+    parser.add_argument("database", help="Database name")
+    parser.add_argument("-U", "--username", help="SQL username (optional)")
+    parser.add_argument("-P", "--password", help="SQL password (optional)")
+
+    args = parser.parse_args()
+
+    sql_runner(
+        script_path=args.script_path,
+        server=args.server,
+        database=args.database,
+        username=args.username,
+        password=args.password
+    )

@@ -16,14 +16,18 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # File Handler (logs everything INFO and above)
-file_handler = logging.FileHandler("run.log")
+logs_dir = "_logs"
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+
+file_handler = logging.FileHandler(os.path.join(logs_dir, "run.log"))
 file_handler.setLevel(logging.INFO)
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
 file_handler.setFormatter(file_formatter)
 
 # Console Handler (only ERROR and above)
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.ERROR)
 console_formatter = logging.Formatter("%(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
 console_handler.setFormatter(console_formatter)
 
@@ -40,7 +44,7 @@ console = Console()
 
 def get_script_order(input_dir):
     """Reads the runlist file and returns the order of scripts."""
-    runlist_path = os.path.join(input_dir, "_runlist2.txt")
+    runlist_path = os.path.join(input_dir, "_runlist.txt")
     if not os.path.exists(runlist_path):
         logger.error(f"'runlist' file not found in folder: {input_dir}")
         raise FileNotFoundError(f"'runlist' file not found in folder: {input_dir}")
@@ -68,12 +72,12 @@ def filter_scripts(scripts, dev, vanilla):
         scripts = [file for file in scripts if 'dev_' in file.lower() or 'dev_' not in file.lower()]
     else:
         scripts = [file for file in scripts if 'dev_' not in file.lower()]
-    logger.info(f"Filtered scripts: {len(scripts)} out of {original_count} (dev={dev}, vanilla={vanilla})")
+    logger.debug(f"Filtered scripts: {len(scripts)} out of {original_count} (dev={dev}, vanilla={vanilla})")
     return scripts
 
 def execute_scripts(scripts, sql_dir, server, database, username, password, debug):
     """Executes the SQL scripts with progress tracking."""
-    logger.info(f"Starting execution of {len(scripts)} scripts in {sql_dir}")
+    logger.debug(f"Starting execution of {len(scripts)} scripts in {sql_dir}")
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -93,19 +97,18 @@ def execute_scripts(scripts, sql_dir, server, database, username, password, debu
                 console.print(f"[red]SQL script '{script}' not found in folder: {sql_dir}[/red]")
                 continue  # Skip to the next script
 
-            logger.info(f"Running {script}")
+            logger.debug(f"Running {script}")
             try:
                 sql_runner(
-                    script_path,
-                    server,
-                    database,
-                    progress,
+                    script_path=script_path,
+                    server=server,
+                    database=database,
                     username=username,
                     password=password
                 )
-                logger.info(f"Successfully executed script: {script}")
+                logger.info(f"PASS: {script}")
             except Exception as e:
-                logger.error(f"Error executing script {script}: {e}")
+                logger.error(f"ERROR: {script}: {e}")
                 console.print(f"[red]Error executing script {script}: {e}[/red]")
 
             if debug:
@@ -128,7 +131,7 @@ def run(options):
     debug = options.get('debug', False)
     vanilla = options.get('vanilla', False)
 
-    logger.info(f"Run started with options: {options}")
+    logger.debug(f"Run started with options: {options}")
 
     try:
         script_order = get_script_order(input_dir)
@@ -140,14 +143,14 @@ def run(options):
             return
 
         if not Confirm.ask(f"Run [bold blue]{input_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow] (dev={dev}, debug={debug})?"):
-            logger.info(f"Execution skipped for {input_dir}.")
+            logger.debug(f"Execution skipped for {input_dir}.")
             console.print(f"[bold red]Skipping {input_dir}[/bold red]")
             return
 
         execute_scripts(scripts, input_dir, server, database, username, password, debug)
 
         if backup or Confirm.ask("SQL scripts completed. Backup database?"):
-            logger.info("Starting database backup.")
+            logger.debug("Starting database backup.")
             backup_db(server=server, database=database, output=os.path.join(input_dir, "_backups"))
 
     except Exception as e:
