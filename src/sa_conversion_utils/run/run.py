@@ -21,7 +21,7 @@ if not os.path.exists(logs_dir):
     os.makedirs(logs_dir)
 
 file_handler = logging.FileHandler(os.path.join(logs_dir, "run.log"))
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
 file_handler.setFormatter(file_formatter)
 
@@ -36,10 +36,10 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 
-BASE_DIR = os.getcwd()
-load_dotenv(os.path.join(BASE_DIR, '.env'))
-SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
-WORKING_DIR = os.path.join(BASE_DIR, SQL_DIR)
+# BASE_DIR = os.getcwd()
+# load_dotenv(os.path.join(BASE_DIR, '.env'))
+# SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
+# WORKING_DIR = os.path.join(BASE_DIR, SQL_DIR)
 console = Console()
 
 def get_script_order(input_dir):
@@ -119,6 +119,9 @@ def execute_scripts(scripts, sql_dir, server, database, username, password, debu
                     return
                 progress.start()
 
+    logger.info(f"Completed all scripts in {sql_dir}.")
+    console.print(f"[green]Completed all scripts in {sql_dir}.[/green]")
+
 def run(options):
     """Main function to process and execute SQL scripts."""
     server = options.get('server')
@@ -151,7 +154,11 @@ def run(options):
 
         if backup or Confirm.ask("SQL scripts completed. Backup database?"):
             logger.debug("Starting database backup.")
-            backup_db(server=server, database=database, output=os.path.join(input_dir, "_backups"))
+            backup_db({
+                'server': server,
+                'database': database,
+                'output': os.path.join(os.getcwd(), "_backups")
+                })
 
     except Exception as e:
         logger.error(f"Error during execution: {e}")

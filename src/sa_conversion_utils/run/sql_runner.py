@@ -11,11 +11,11 @@ RUN_LOG = os.path.join(LOGS_DIR, 'run.log')
 
 # Configure logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # File Handler (logs everything INFO and above)
 file_handler = logging.FileHandler(os.path.join(LOGS_DIR, "run.log"))
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
 file_handler.setFormatter(file_formatter)
 
@@ -30,8 +30,25 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 def sql_runner(script_path: str, server: str, database: str, username=None, password=None):
+    """
+    Executes a SQL script using sqlcmd.
+
+    Args:
+        script_path (str): Path to the SQL script.
+        server (str): SQL Server name.
+        database (str): Database name.
+        username (str, optional): SQL username.
+        password (str, optional): SQL password.
+
+    Returns:
+        None
+    """
     start_time = time.time()
     script_name = os.path.basename(script_path)
+
+    logger.debug(f"Starting execution of script: {script_name}")
+    logger.debug(f"Script path: {script_path}")
+    logger.debug(f"Server: {server}, Database: {database}")
 
     # Build the command
     cmd = ['sqlcmd', '-S', server, '-d', database, '-i', script_path, '-b', '-h', '-1']
@@ -39,8 +56,10 @@ def sql_runner(script_path: str, server: str, database: str, username=None, pass
     # Use Windows Authentication if no username/password is provided
     if username and password:
         cmd += ['-U', username, '-P', password]
+        logger.debug("Using SQL authentication.")
     else:
         cmd.append('-E')  # Use Trusted Connection
+        logger.debug("Using Windows authentication (Trusted Connection).")
 
     try:
         result = subprocess.run(
@@ -52,7 +71,7 @@ def sql_runner(script_path: str, server: str, database: str, username=None, pass
         duration = time.time() - start_time
         output = result.stdout.strip() if result.stdout else "(No output)"
         msg = f"PASS: {script_name} in {duration:.2f}s\n{output}"
-        logger.info(msg)
+        logger.debug(msg)
 
     except subprocess.CalledProcessError as e:
         duration = time.time() - start_time
@@ -62,12 +81,13 @@ def sql_runner(script_path: str, server: str, database: str, username=None, pass
         msg = f"FAIL: {script_name} in {duration:.2f}s\n{output}"
         logger.error(msg)
 
+        raise RuntimeError(f"ERROR: {script_name}") from e
+
+    except Exception as e:
+        logger.exception(f"Unexpected error while executing script: {script_name}")
+        raise
 # For manual test runs
 if __name__ == "__main__":
-    # script_path = input("Enter the path to the SQL script: ")
-    # server = input("Enter the SQL Server name: ")
-    # database = input("Enter the database name: ")
-    # sql_runner(script_path, server, database)
     import argparse
 
     parser = argparse.ArgumentParser(description="Run a SQL script using sql_runner.")
