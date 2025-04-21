@@ -7,8 +7,9 @@ from tkinter import filedialog
 from rich.console import Console
 from rich.prompt import Confirm
 
+console = Console()
 
-def find_backup_file(database, message, backup_dir='backups'):
+def find_backup_file(database, message, backup_dir='_backups'):
     """
     Searches for backup file with the specified database name and optional message in the filename.
     """
@@ -36,7 +37,7 @@ def select_bak_backup_file():
     root = tk.Tk()
     root.withdraw()
     root.wm_attributes('-topmost', 1)
-    initial_dir = os.path.join(os.getcwd(), 'backups')
+    initial_dir = os.path.join(os.getcwd(), '_backups')
     backup_file = filedialog.askopenfile(
         title="Select the .bak backup_file to restore",
         filetypes=[("SQL Backup backup_files", "*.bak")],
@@ -50,7 +51,7 @@ def restore_db(options):
     server = options.get('server')
     database = options.get('database')
     message = options.get('message')
-    backup_dir = options.get('backup_dir', 'backups')
+    backup_dir = options.get('backup_dir', '_backups')
     manual = options.get('manual', False)
     virgin = options.get('virgin', False)
 
