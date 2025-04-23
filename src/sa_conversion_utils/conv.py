@@ -17,7 +17,6 @@ from sa_conversion_utils.run.run import run
 from sa_conversion_utils.utilities.mapping import main as generate_mapping
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
-from .logging.migration_logger import log_migration_step
 
 console = Console()
 
