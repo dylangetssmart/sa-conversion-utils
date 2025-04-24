@@ -137,12 +137,22 @@ def run(options):
     logger.debug(f"Run started with options: {options}")
 
     try:
-        script_order = get_script_order(input_dir)
-        scripts = filter_scripts(script_order, dev, vanilla)
+        # Validate the input directory
+        if not os.path.exists(input_dir):
+            logger.error(f"Input directory does not exist: {input_dir}")
+            console.print(f"[red]Input directory does not exist: {input_dir}[/red]")
+            return
+
+        # Get all .sql files in the input directory
+        all_scripts = [f for f in os.listdir(input_dir) if f.lower().endswith('.sql')]
+        all_scripts.sort()  # Sort scripts alphabetically for sequential execution
+
+        # Apply filtering logic
+        scripts = filter_scripts(all_scripts, dev, vanilla)
 
         if not scripts:
-            logger.warning(f"No SQL scripts found in {input_dir}.")
-            console.print(f"No SQL scripts found in {input_dir}.", style="bold red")
+            logger.warning(f"No SQL scripts found in {input_dir} after filtering.")
+            console.print(f"No SQL scripts found in {input_dir} after filtering.", style="bold red")
             return
 
         if not Confirm.ask(f"Run [bold blue]{input_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow] (dev={dev}, debug={debug})?"):
@@ -150,6 +160,7 @@ def run(options):
             console.print(f"[bold red]Skipping {input_dir}[/bold red]")
             return
 
+        # Execute scripts sequentially
         execute_scripts(scripts, input_dir, server, database, username, password, debug)
 
         if backup or Confirm.ask("SQL scripts completed. Backup database?"):
@@ -158,7 +169,7 @@ def run(options):
                 'server': server,
                 'database': database,
                 'output': os.path.join(os.getcwd(), "_backups")
-                })
+            })
 
     except Exception as e:
         logger.error(f"Error during execution: {e}")
