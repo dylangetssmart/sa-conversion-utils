@@ -108,7 +108,8 @@ def run_common(args, input_path = None, is_all = False, vanilla = False):
         'debug': args.debug,
         'input': args.input or input_path,
         'all': is_all,
-        'vanilla': vanilla
+        'vanilla': vanilla,
+        'use_metadata': args.metadata
     }
     run(options)
 
@@ -219,6 +220,7 @@ def main():
     run_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
     run_parser.add_argument('--dev', action='store_true', help='Include scripts prefixed with _dev_, which are skipped by default')
     run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
+    run_parser.add_argument('-metadata', '--meta', action='store_true', help='Pauses execution after each script')
     run_parser.set_defaults(func=run_common)
     # run_subparsers.required = False
 
@@ -302,3 +304,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

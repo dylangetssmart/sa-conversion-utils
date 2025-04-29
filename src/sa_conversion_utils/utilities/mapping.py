@@ -1,85 +1,118 @@
 import os
+import logging
 import re
 import pandas as pd
-# from sqlalchemy import create_engine
-from dotenv import load_dotenv
 from rich.console import Console
 from sa_conversion_utils.utilities.create_engine import main as create_engine
+
+# Setup logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+logs_dir = os.path.join(os.getcwd(), "_logs")
+os.makedirs(logs_dir, exist_ok=True)
+
+file_handler = logging.FileHandler(os.path.join(logs_dir, "mapping.log"))
+file_handler.setLevel(logging.DEBUG)
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
+file_handler.setFormatter(file_formatter)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.ERROR)
+console_formatter = logging.Formatter("%(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
+console_handler.setFormatter(console_formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
 console = Console()
 
-# Directory containing SQL files and output directory
-# sql_dir = '../sql/mapping'
-# output_dir = '../sql/mapping'
-
-# Load environment variables
-load_dotenv()
-SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
-BASE_DIR = os.getcwd()
-
-mapping_dir = os.path.join(BASE_DIR, SQL_DIR,'map')
-
+# Utility functions
 def clean_string(value):
+    """Remove non-printable or control characters from a string."""
     if isinstance(value, str):
-        # Remove any non-printable or control characters
         return re.sub(r'[\x00-\x1F\x7F-\x9F]', '', value)
     return value
 
 def sanitize_dataframe(df):
+    """Sanitize a DataFrame by cleaning its string values."""
     return df.map(clean_string)
 
 def execute_query(query, engine, additional_columns=None):
-    # Executes a SQL query and returns the result as a DataFrame with additional columns.
+    """Execute a SQL query and return the result as a DataFrame."""
     try:
+
+        # Remove USE statement from the query
+        # query = re.sub(r'^\s*USE\s+\S+.*$', '', query, flags=re.IGNORECASE | re.MULTILINE).strip()
+        # query = re.split(r'^\s*GO\s*$', query, flags=re.MULTILINE | re.IGNORECASE)
+
+        if not query:
+            logger.warning("Query is empty after removing USE statement.")
+            return pd.DataFrame()
+
         df = pd.read_sql_query(query, engine)
-        # print(f"Query executed successfully.")
-        
-        # Add additional columns if provided
         if additional_columns:
             for col, default_value in additional_columns.items():
                 if col not in df.columns:
                     df[col] = default_value
-        
         return df
     except Exception as e:
-        print(f"Error executing query: {e}")
+        logger.error(f"Error executing query: {e}") 
         return pd.DataFrame()
 
 def save_to_excel(dataframes, output_path):
-    # Saves multiple DataFrames to an Excel file with different sheets.
+    """Save multiple DataFrames to an Excel file with different sheets."""
     if not dataframes:
-        print("No data to save.")
+        logger.warning("No data to save.")
         return
-    
-    # print(f"Attempting to save Excel file to: {output_path}")
 
-    # Save DataFrames to Excel
     try:
         with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
             for sheet_name, df in dataframes.items():
-                # df.to_excel(writer, sheet_name=sheet_name, index=False)
-                # Sanitize DataFrame before saving
                 sanitized_df = sanitize_dataframe(df)
                 sanitized_df.to_excel(writer, sheet_name=sheet_name, index=False)
-        # print(f"Excel file saved successfully to: {output_path}")
+        logger.info(f"Excel file saved successfully to: {output_path}")
     except PermissionError as e:
-        print(f"Permission denied: {e}")
+        logger.error(f"Permission denied: {e}")
     except Exception as e:
-        print(f"An error occurred while saving the Excel file: {e}")
+        logger.error(f"An error occurred while saving the Excel file: {e}")
+
+def process_sql_files(mapping_dir, engine, general_columns, party_role_columns):
+    """Process SQL files in the mapping directory and execute their queries."""
+    dataframes = {}
+    for filename in os.listdir(mapping_dir):
+        if filename.endswith('.sql'):
+            full_file_path = os.path.join(mapping_dir, filename)
+            sheet_name = os.path.splitext(filename)[0]
+            try:
+                with open(full_file_path, 'r') as file:
+                    query = file.read().strip()
+                    if 'party_role' in filename.lower():
+                        df = execute_query(query, engine, additional_columns=party_role_columns)
+                    else:
+                        df = execute_query(query, engine, additional_columns=general_columns)
+
+                    if not df.empty:
+                        dataframes[sheet_name] = df
+                    else:
+                        logger.warning(f"Empty DataFrame for SQL file: {filename}")
+            except Exception as e:
+                logger.error(f"Failed to read SQL file {filename}: {e}")
+    return dataframes
 
 def main(options):
+    """Main function to process SQL files and save results to an Excel file."""
     server = options.get('server')
     database = options.get('database')
-    # conn_str = f"mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
-    # conn_str = f"mssql+pyodbc://sa:SAsuper@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
-    # conn_str = f'mssql+pyodbc://{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
-    # engine = create_engine(conn_str)
-    
+    input_dir = options.get('input')
+
+    if not os.path.exists(input_dir):
+        logger.error(f"Input directory does not exist: {input_dir}")
+        console.print(f"[red]Input directory does not exist: {input_dir}[/red]")
+        return
+
     engine = create_engine(server=server, database=database)
 
-    # Create a dictionary to store DataFrames for each query
-    dataframes = {}
-    
-    # Define additional columns for general data and party roles
     general_columns = {
         "SmartAdvocate Section": None,
         "SmartAdvocate Screen": None,
@@ -89,55 +122,40 @@ def main(options):
         "Contact Type": None,
         "Comment": None
     }
-    
+
     party_role_columns = {
         "SA Role": None,
         "SA Party": None
     }
-    
-    with console.status("working..."):
-    # Iterate over SQL files in full_sql_dir
-        for filename in os.listdir(mapping_dir):
-            if filename.endswith('.sql'):
-                full_file_path = os.path.join(mapping_dir, filename)
-                sheet_name = os.path.splitext(filename)[0]  # Use filename without extension as sheet name
-                try:
-                    with open(full_file_path, 'r') as file:
-                        query = file.read().strip()
-                        # Choose additional columns based on file or content type
-                        if 'party_role' in filename.lower():
-                            df = execute_query(query, engine, additional_columns=party_role_columns)
-                        else:
-                            df = execute_query(query, engine, additional_columns=general_columns)
-                        
-                        if not df.empty:
-                            dataframes[sheet_name] = df
-                        else:
-                            print(f"Empty DataFrame for SQL file: {filename}")
-                except Exception as e:
-                    print(f"Failed to read SQL file {filename}: {e}")
-    
-    # Debug print statements
-    # print(f"Queries executed: {len(dataframes)}")
-    # for name in dataframes:
-    #     print(f"DataFrame '{name}' shape: {dataframes[name].shape}")
-    
-    parent_dir_name = os.path.basename(os.path.abspath(BASE_DIR))
-    # parent_dir_name = os.path.basename(os.path.abspath(os.path.join(BASE_DIR, os.pardir)))
 
-    # Save all DataFrames to a single Excel file
-    output_filename = f'{parent_dir_name} Mapping Template.xlsx'
-    output_path = os.path.join(BASE_DIR, output_filename)
+    # Process SQL files
+    dataframes = process_sql_files(input_dir, engine, general_columns, party_role_columns)
+
+    # Save results to Excel
+    parent_dir_name = os.path.basename(os.path.abspath(os.getcwd()))
+    output_filename = f'{parent_dir_name} Data Mapping.xlsx'
+    output_path = os.path.join(os.getcwd(), output_filename)
     save_to_excel(dataframes, output_path)
-    
-    print(f'Saved results to {output_path}')
+
+    console.print(f"[green]Saved results to {output_path}[/green]")
+    logger.info(f"Saved results to {output_path}")
 
 if __name__ == "__main__":
+    """Command-line interface entry point."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Process SQL files and save results to an Excel file.")
+    parser.add_argument("-s", "--server", required=True, help="SQL Server")
+    parser.add_argument("-d", "--database", required=True, help="Database")
+    parser.add_argument("-i", "--input", required=True, help="Path to the input folder containing SQL files.")
+    
+    args = parser.parse_args()
+
+    # Build options dictionary
     options = {
-        'server': 'DylanS\\MSSQLSERVER2022',
-        'database': 'VanceLawFirm_Needles',
-        # 'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup\user_profile.csv",
-        # 'input_path': r"D:\Needles-JoelBieber\trans\Grow Path\PostgreSQL data - joelbieber_backup",
-        # 'chunk_size': 2000
+        'server': args.server,
+        'database': args.database,
+        'input': args.input
     }
+
+    # Call the main function with the parsed options
     main(options)

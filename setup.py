@@ -31,7 +31,8 @@ setup(
         "python-dotenv",
         "pyodbc",
         "openpyxl",
-        "chardet"
+        "chardet",
+        "pyyaml",
         # "tkinter"
     ],
     extras_require={

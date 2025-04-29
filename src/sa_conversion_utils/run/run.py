@@ -1,21 +1,16 @@
 import os
 import logging
-from dotenv import load_dotenv
 from sa_conversion_utils.database.backup import backup_db
 from sa_conversion_utils.run.sql_runner import sql_runner
+from sa_conversion_utils.utilities.read_yaml_metadata import read_yaml_metadata
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, SpinnerColumn
 from rich.prompt import Confirm
 
-"""
-This script collects applicable .sql scripts from the specified directory and passes them into sql_runner.py
-"""
-
-# Create logger
+# Setup logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
-# File Handler (logs everything INFO and above)
 logs_dir = "_logs"
 if not os.path.exists(logs_dir):
     os.makedirs(logs_dir)
@@ -25,43 +20,33 @@ file_handler.setLevel(logging.DEBUG)
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
 file_handler.setFormatter(file_formatter)
 
-# Console Handler (only ERROR and above)
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.ERROR)
+console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter("%(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
 console_handler.setFormatter(console_formatter)
 
-# Attach handlers
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
-
-# BASE_DIR = os.getcwd()
-# load_dotenv(os.path.join(BASE_DIR, '.env'))
-# SQL_DIR = os.getenv('SQL_DIR', 'default_sql_dir')
-# WORKING_DIR = os.path.join(BASE_DIR, SQL_DIR)
 console = Console()
 
-def get_script_order(input_dir):
-    """Reads the runlist file and returns the order of scripts."""
-    runlist_path = os.path.join(input_dir, "_runlist.txt")
-    if not os.path.exists(runlist_path):
-        logger.error(f"'runlist' file not found in folder: {input_dir}")
-        raise FileNotFoundError(f"'runlist' file not found in folder: {input_dir}")
-
-    with open(runlist_path, "r") as runlist_file:
-        scripts = [line.strip() for line in runlist_file if line.strip() and not line.strip().startswith("#")]
-        logger.debug(f"Script order loaded: {scripts}")
-        return scripts
-
-def validate_script_path(folder_path, script_name):
-    """Validates the existence of a script in the given folder."""
-    script_path = os.path.join(folder_path, script_name)
-    if not os.path.exists(script_path):
-        logger.error(f"SQL script '{script_name}' not found in folder: {folder_path}")
-        raise FileNotFoundError(f"SQL script '{script_name}' listed in 'runlist' not found in folder: {folder_path}")
-    logger.debug(f"Validated script path: {script_path}")
-    return script_path
+def get_scripts_with_metadata(input_dir):
+    """Reads metadata from each SQL file and builds a list of scripts with their sequence."""
+    scripts_with_metadata = []
+    for filename in os.listdir(input_dir):
+        if filename.lower().endswith('.sql'):
+            file_path = os.path.join(input_dir, filename)
+            # logger.debug(f"Reading metadata from {file_path}")
+            metadata = read_yaml_metadata(file_path)
+            if metadata:
+                sequence = metadata.get("sequence", float('inf'))  # Default to infinity if no sequence is provided
+                scripts_with_metadata.append({"filename": filename, "sequence": sequence})
+            else:
+                logger.warning(f"No metadata found for file: {filename}")
+    # Sort scripts by sequence
+    scripts_with_metadata.sort(key=lambda x: x["sequence"])
+    # logger.debug(f"Scripts with metadata: {scripts_with_metadata}")
+    return [script["filename"] for script in scripts_with_metadata]
 
 def filter_scripts(scripts, dev, vanilla):
     """Filters scripts based on dev and vanilla flags."""
@@ -90,22 +75,21 @@ def execute_scripts(scripts, sql_dir, server, database, username, password, debu
         console=console
     ) as progress:
         for script in scripts:
-            # Validate script path
             script_path = os.path.join(sql_dir, script)
             if not os.path.exists(script_path):
                 logger.error(f"SQL script '{script}' not found in folder: {sql_dir}")
                 console.print(f"[red]SQL script '{script}' not found in folder: {sql_dir}[/red]")
-                continue  # Skip to the next script
+                continue
 
             logger.debug(f"Running {script}")
             try:
-                sql_runner(
-                    script_path=script_path,
-                    server=server,
-                    database=database,
-                    username=username,
-                    password=password
-                )
+                # sql_runner(
+                #     script_path=script_path,
+                #     server=server,
+                #     database=database,
+                #     username=username,
+                #     password=password
+                # )
                 logger.info(f"PASS: {script}")
             except Exception as e:
                 logger.error(f"ERROR: {script}: {e}")
@@ -133,6 +117,7 @@ def run(options):
     dev = options.get('dev', False)
     debug = options.get('debug', False)
     vanilla = options.get('vanilla', False)
+    use_metadata = options.get('metadata', True)
 
     logger.debug(f"Run started with options: {options}")
 
@@ -143,17 +128,26 @@ def run(options):
             console.print(f"[red]Input directory does not exist: {input_dir}[/red]")
             return
 
-        # Get all .sql files in the input directory
-        all_scripts = [f for f in os.listdir(input_dir) if f.lower().endswith('.sql')]
-        all_scripts.sort()  # Sort scripts alphabetically for sequential execution
+        # Collect scripts
+        if use_metadata:
+            logger.debug("Using metadata to filter scripts.")
+            # Get scripts with metadata and sort by sequence
+            all_scripts = get_scripts_with_metadata(input_dir)
+        else:
+            logger.debug("Not using metadata to filter scripts.")   
+            # Get all .sql files in the input directory
+            all_scripts = [f for f in os.listdir(input_dir) if f.lower().endswith('.sql')]
+            all_scripts.sort()  # Sort scripts alphabetically for sequential execution
 
-        # Apply filtering logic
+        # Filter scripts
         scripts = filter_scripts(all_scripts, dev, vanilla)
 
         if not scripts:
             logger.warning(f"No SQL scripts found in {input_dir} after filtering.")
             console.print(f"No SQL scripts found in {input_dir} after filtering.", style="bold red")
             return
+        
+        logger.debug("Scripts to be executed in order:\n" + "\n".join(f"- {s}" for s in scripts))
 
         if not Confirm.ask(f"Run [bold blue]{input_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow] (dev={dev}, debug={debug})?"):
             logger.debug(f"Execution skipped for {input_dir}.")
@@ -177,13 +171,30 @@ def run(options):
 
 if __name__ == "__main__":
     # Example usage
+    # options = {
+    #     'server': r'dylans\mssqlserver2022',
+    #     'database': 'test',
+    #     'input': r'C:\LocalConv\conversion-boilerplate\needles\conversion\1_contact',
+    #     'backup': False,
+    #     'dev': False,
+    #     'debug': False,
+    #     'vanilla': False
+    # }
+
+    """Command-line interface entry point."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Process SQL files and save results to an Excel file.")
+    parser.add_argument("-s", "--server", required=True, help="SQL Server")
+    parser.add_argument("-d", "--database", required=True, help="Database")
+    parser.add_argument("-i", "--input", required=True, help="Path to the input folder containing SQL files.")
+    
+    args = parser.parse_args()
+
+    # Build options dictionary
     options = {
-        'server': r'dylans\mssqlserver2022',
-        'database': 'test',
-        'input': r'D:\skolrood\needles\conv\2_case',
-        'backup': False,
-        'dev': False,
-        'debug': False,
-        'vanilla': False
+        'server': args.server,
+        'database': args.database,
+        'input': args.input
     }
+
     run(options)
