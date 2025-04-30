@@ -92,7 +92,7 @@ run
 #     if Confirm.ask("[bold green]Run scripts in sql/post[/bold green]"):
 #         run_common(args, 'sql/post')
 
-def run_common(args, input_path = None, is_all = False, vanilla = False):
+def run_common(args, input_path = None):
     """Execute common logic for all commands."""
     # print(args)
     # Use input_path from argument or passed explicitly
@@ -103,12 +103,9 @@ def run_common(args, input_path = None, is_all = False, vanilla = False):
         'database': args.database or SA_DB,
         'username': args.username,
         'password': args.password,
-        # 'backup': args.backup,
         'dev': args.dev,
         'debug': args.debug,
         'input': args.input or input_path,
-        'all': is_all,
-        'vanilla': vanilla,
         'use_metadata': args.metadata
     }
     run(options)
@@ -220,7 +217,7 @@ def main():
     run_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
     run_parser.add_argument('--dev', action='store_true', help='Include scripts prefixed with _dev_, which are skipped by default')
     run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
-    run_parser.add_argument('-metadata', '--meta', action='store_true', help='Pauses execution after each script')
+    run_parser.add_argument('--metadata', action='store_true', help='Pauses execution after each script')
     run_parser.set_defaults(func=run_common)
     # run_subparsers.required = False
 
