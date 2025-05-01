@@ -78,8 +78,7 @@ def sql_runner(script_path: str, server: str, database: str, username=None, pass
         output = (e.stdout or '') + (e.stderr or '')
         output = output.strip() if output else str(e)
 
-        msg = f"FAIL: {script_name} in {duration:.2f}s\n{output}"
-        logger.error(msg)
+        logger.error(f"FAIL: {script_name} in {duration:.2f}s\n{output}")
 
         raise RuntimeError(f"ERROR: {script_name}") from e
 

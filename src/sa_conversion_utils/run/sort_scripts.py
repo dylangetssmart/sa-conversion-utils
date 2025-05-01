@@ -1,10 +1,15 @@
 import os
-from sa_conversion_utils.utilities.read_yaml_metadata import read_yaml_metadata
+from sa_conversion_utils.run.read_yaml_metadata import read_yaml_metadata
 from sa_conversion_utils.utilities.setup_logger import setup_logger
 
 logger = setup_logger(__name__, log_file="run.log")
 
-GROUP_ORDER = ["case", "party", "misc"]
+GROUP_ORDER = [
+    "setup",
+    "load",
+    "postload",
+    "cleanup"
+]
 
 def sort_scripts_using_metadata(input_dir):
     """Reads metadata from each SQL file and builds a list of scripts with their sequence and group."""
@@ -24,7 +29,7 @@ def sort_scripts_using_metadata(input_dir):
                 order = metadata.get("order", float('inf')) if metadata.get("order") is not None else float('inf')                
                 logger.debug(f"Metadata found for {filename}: {metadata}")
             else:
-                logger.warning(f"No metadata found for file: {filename}")
+                logger.debug(f"No metadata found for file: {filename}")
                 group = "misc"
                 order = float('inf')  # Default order if no metadata is found
 

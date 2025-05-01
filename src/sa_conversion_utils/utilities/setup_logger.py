@@ -21,7 +21,7 @@ def setup_logger(name=__name__, log_file=None, level=logging.DEBUG):
 
         # Console handler
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
+        console_handler.setLevel(logging.INFO)
         console_formatter = logging.Formatter(
             "%(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s"
         )

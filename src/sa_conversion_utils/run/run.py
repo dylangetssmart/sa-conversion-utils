@@ -42,8 +42,8 @@ def execute_scripts(scripts, sql_dir, server, database, username, password):
                 password=password
             )
             logger.info(f"PASS: {script}")
-        except Exception as e:
-            logger.error(f"ERROR: {script}: {e}")
+        except Exception:
+            logger.error(f"ERROR: {script}")
 
     logger.info(f"Completed all scripts in {sql_dir}.")
 
@@ -69,7 +69,7 @@ def run(options):
     
     # Format the list of scripts for console output
     formatted_scripts = "\n".join([f"- {script}" for script in scripts])
-    logger.info(f"Scripts to execute: \n{formatted_scripts}")
+    logger.info(f"Order of scripts to execute: \n{formatted_scripts}")
 
     if not Confirm.ask(f"Run [bold blue]{input_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
         logger.info(f"Execution skipped for {input_dir}.")
