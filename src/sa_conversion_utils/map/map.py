@@ -1,29 +1,11 @@
 import os
-import logging
 import re
 import pandas as pd
 from rich.console import Console
 from sa_conversion_utils.utilities.create_engine import main as create_engine
+from sa_conversion_utils.utilities.setup_logger import setup_logger
 
-# Setup logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-logs_dir = os.path.join(os.getcwd(), "_logs")
-os.makedirs(logs_dir, exist_ok=True)
-
-file_handler = logging.FileHandler(os.path.join(logs_dir, "mapping.log"))
-file_handler.setLevel(logging.DEBUG)
-file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
-file_handler.setFormatter(file_formatter)
-
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.ERROR)
-console_formatter = logging.Formatter("%(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
-console_handler.setFormatter(console_formatter)
-
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+logger = setup_logger(__name__, log_file="map.log")
 
 console = Console()
 

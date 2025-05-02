@@ -14,7 +14,7 @@ from rich.prompt import Confirm, Prompt
 from sa_conversion_utils.database.backup import backup_db
 from sa_conversion_utils.database.restore import restore_db
 from sa_conversion_utils.run.run import run
-from sa_conversion_utils.utilities.mapping import main as generate_mapping
+from sa_conversion_utils.map.map import main as generate_mapping
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
 
@@ -31,7 +31,8 @@ SQL_DIR = os.getenv('SQL_DIR')
 def map(args):
     options = {
         'server': args.server or SERVER,
-        'database': args.database or SOURCE_DB
+        'database': args.database or SOURCE_DB,
+         'input': args.input
     }
     if Confirm.ask("[bold green]Run scripts in /map and output results to Excel[/bold green]"):
         generate_mapping(options)
@@ -203,10 +204,11 @@ def main():
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: generate-mapping
     """
-    mapping_parser = subparsers.add_parser('generate-mapping', help='Run SQL scripts in \\map and output the results to Excel.')
+    mapping_parser = subparsers.add_parser('map', help='Run SQL scripts in \\map and output the results to Excel.')
     # mapping_parser.add_argument('system', help='SQL Script sequence to execute.', choices=['needles'], type=str)
     # mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
     # mapping_parser.add_argument('-d', '--database', help='Database to execute against. If not supplied, defaults to SA_DB from .env.', metavar='')
+    mapping_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
     mapping_parser.set_defaults(func=map)
 
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
