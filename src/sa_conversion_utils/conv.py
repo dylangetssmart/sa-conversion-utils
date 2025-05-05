@@ -1,23 +1,20 @@
 # External
-import sys
 import os
 import argparse
-from importlib.resources import files
 from dotenv import load_dotenv
-from datetime import datetime
 from rich.console import Console
-from rich.table import Table
-from rich.prompt import Confirm, Prompt
+from rich.prompt import Confirm
 
 # Module imports
-# from sql_runner import sql_runner
+from sa_conversion_utils.utilities.setup_logger import setup_logger
 from sa_conversion_utils.database.backup import backup_db
 from sa_conversion_utils.database.restore import restore_db
 from sa_conversion_utils.run.run import run
-from sa_conversion_utils.map.map import main as generate_mapping
+from sa_conversion_utils.map.map import map as generate_mapping
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
 
+logger = setup_logger(__name__, log_file="sami.log")
 console = Console()
 
 # Load environment variables
@@ -34,8 +31,7 @@ def map(args):
         'database': args.database or SOURCE_DB,
          'input': args.input
     }
-    if Confirm.ask("[bold green]Run scripts in /map and output results to Excel[/bold green]"):
-        generate_mapping(options)
+    generate_mapping(options)    
 
 def backup(args):
     options = {

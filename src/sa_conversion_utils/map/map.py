@@ -2,6 +2,7 @@ import os
 import re
 import pandas as pd
 from rich.console import Console
+from rich.prompt import Confirm
 from sa_conversion_utils.utilities.create_engine import main as create_engine
 from sa_conversion_utils.utilities.setup_logger import setup_logger
 
@@ -59,20 +60,46 @@ def save_to_excel(dataframes, output_path):
     except Exception as e:
         logger.error(f"An error occurred while saving the Excel file: {e}")
 
-def process_sql_files(mapping_dir, engine, general_columns, party_role_columns):
+def process_sql_files(mapping_dir, engine, user_columns, party_role_columns):
     """Process SQL files in the mapping directory and execute their queries."""
+    PRIORITY_ORDER = [
+        'Case Types',
+        'Case Staff',
+        'Party Roles',
+        'Value Codes',
+        'Intake'
+    ]
+
+    # 1. Get all .sql filenames
+    all_sql_files = [f for f in os.listdir(mapping_dir) if f.endswith('.sql')]
+
+    # 2. Sort filenames by PRIORITY_ORDER first, then alphabetically
+    def sort_key(filename):
+        sheet_name = os.path.splitext(filename)[0]
+        try:
+            return (PRIORITY_ORDER.index(sheet_name), sheet_name)
+        except ValueError:
+            return (float('inf'), sheet_name)
+
+    sorted_files = sorted(all_sql_files, key=sort_key)
+
     dataframes = {}
-    for filename in os.listdir(mapping_dir):
+
+    # for filename in os.listdir(mapping_dir):
+    for filename in sorted_files:
         if filename.endswith('.sql'):
             full_file_path = os.path.join(mapping_dir, filename)
             sheet_name = os.path.splitext(filename)[0]
             try:
                 with open(full_file_path, 'r') as file:
                     query = file.read().strip()
-                    if 'party_role' in filename.lower():
+
+                    if 'Party Roles' in filename.lower():
                         df = execute_query(query, engine, additional_columns=party_role_columns)
+                    elif 'Value Codes' in filename.lower() or 'user' in filename.lower():
+                        df = execute_query(query, engine, additional_columns=user_columns)
                     else:
-                        df = execute_query(query, engine, additional_columns=general_columns)
+                        df = execute_query(query, engine)
 
                     if not df.empty:
                         dataframes[sheet_name] = df
@@ -82,11 +109,15 @@ def process_sql_files(mapping_dir, engine, general_columns, party_role_columns):
                 logger.error(f"Failed to read SQL file {filename}: {e}")
     return dataframes
 
-def main(options):
+def map(options):
     """Main function to process SQL files and save results to an Excel file."""
     server = options.get('server')
     database = options.get('database')
     input_dir = options.get('input')
+
+    if not Confirm.ask(f"Run [bold blue]{input_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
+        logger.info(f"Execution skipped for {input_dir}.")
+        return
 
     if not os.path.exists(input_dir):
         logger.error(f"Input directory does not exist: {input_dir}")
@@ -95,7 +126,7 @@ def main(options):
 
     engine = create_engine(server=server, database=database)
 
-    general_columns = {
+    user_columns = {
         "SmartAdvocate Section": None,
         "SmartAdvocate Screen": None,
         "SmartAdvocate Field": None,
@@ -111,7 +142,7 @@ def main(options):
     }
 
     # Process SQL files
-    dataframes = process_sql_files(input_dir, engine, general_columns, party_role_columns)
+    dataframes = process_sql_files(input_dir, engine, user_columns, party_role_columns)
 
     # Save results to Excel
     parent_dir_name = os.path.basename(os.path.abspath(os.getcwd()))
@@ -132,12 +163,10 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    # Build options dictionary
     options = {
         'server': args.server,
         'database': args.database,
         'input': args.input
     }
 
-    # Call the main function with the parsed options
-    main(options)
+    map(options)
