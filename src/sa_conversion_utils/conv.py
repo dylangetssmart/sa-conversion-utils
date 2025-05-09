@@ -10,7 +10,7 @@ from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 from sa_conversion_utils.utils.user_config import load_user_config
 from sa_conversion_utils.database.backup import backup_db
 from sa_conversion_utils.database.restore import restore_db
-from sa_conversion_utils.run.run import run
+from sa_conversion_utils.run.run import run_sql_scripts, add_run_parser
 from sa_conversion_utils.map.map import map as generate_mapping
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
@@ -18,10 +18,8 @@ from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
 logger = setup_logger(__name__, log_file="sami.log")
 console = Console()
 
-""" Config"""
 
 
-# Load environment variables
 BASE_DIR = os.path.dirname(__file__)
 
 
@@ -39,12 +37,10 @@ config = load_user_config({
     "SOURCE_DB": "Enter the source database name",
     "TARGET_DB": "Enter the target SmartAdvocate DB name",
     "SQL_DIR": "Enter the SQL directory path",
-    "fruit": "Enter fruit",
-    "ice cream": "Enter ice cream"
 
 })
 
-logger.info(f"Config loaded from .env file: {config}")
+logger.debug(f"Config loaded from .env file: \n{config}")
 # for k, v in config.items():
 #     print(f"{k} = {v}")
 
@@ -124,23 +120,23 @@ run
 #     if Confirm.ask("[bold green]Run scripts in sql/post[/bold green]"):
 #         run_common(args, 'sql/post')
 
-def run_common(args, input_path = None):
-    """Execute common logic for all commands."""
-    # print(args)
-    # Use input_path from argument or passed explicitly
-    # input_path = input_path or args.input
+# def run_common(args, input_path = None):
+#     """Execute common logic for all commands."""
+#     # print(args)
+#     # Use input_path from argument or passed explicitly
+#     # input_path = input_path or args.input
 
-    options = {
-        'server': args.server or SERVER,
-        'database': args.database or SA_DB,
-        'username': args.username,
-        'password': args.password,
-        'dev': args.dev,
-        'debug': args.debug,
-        'input': args.input or input_path,
-        'use_metadata': args.metadata
-    }
-    run(options)
+#     options = {
+#         'server': args.server or SERVER,
+#         'database': args.database or SA_DB,
+#         'username': args.username,
+#         'password': args.password,
+#         'dev': args.dev,
+#         'debug': args.debug,
+#         'input': args.input or input_path,
+#         'use_metadata': args.metadata
+#     }
+#     run(options)
 
 def restore(args):
     options = {
@@ -245,14 +241,16 @@ def main():
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: run
     """
-    run_parser = subparsers.add_parser('run', help='Run SQL scripts')
-    # run_subparsers = run_parser.add_subparsers(title="run subcommands", dest="subcommand")
-    run_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
-    run_parser.add_argument('--dev', action='store_true', help='Include scripts prefixed with _dev_, which are skipped by default')
-    run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
-    run_parser.add_argument('--metadata', action='store_true', help='Pauses execution after each script')
-    run_parser.set_defaults(func=run_common)
+    # run_parser = subparsers.add_parser('run', help='Run SQL scripts')
+    # # run_subparsers = run_parser.add_subparsers(title="run subcommands", dest="subcommand")
+    # run_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
+    # run_parser.add_argument('--dev', action='store_true', help='Include scripts prefixed with _dev_, which are skipped by default')
+    # run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
+    # run_parser.add_argument('--metadata', action='store_true', help='Pauses execution after each script')
+    # run_parser.set_defaults(func=run_common)
     # run_subparsers.required = False
+
+    add_run_parser(subparsers)
 
     # Subcommand: run > conv
     # conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')

@@ -2,6 +2,8 @@ from dotenv import load_dotenv, set_key
 import os
 from pathlib import Path
 from sa_conversion_utils.utils.logging.setup_logger import setup_logger
+from rich import print
+from rich.prompt import Prompt, Confirm
 
 logger = setup_logger(__name__, log_file="sami.log")
 
@@ -19,6 +21,7 @@ def get_or_prompt_env(key: str, prompt: str) -> str:
 
     # if they key isn't found in .env, then ask the user for it
     if not value:
+        print(f"{key} not found in .env file.")
         value = input(f"{prompt}: ").strip()
         set_key(dotenv_path=str(ENV_PATH), key_to_set=key, value_to_set=value)
         logger.debug(f"set {key} to {value} in .env")
