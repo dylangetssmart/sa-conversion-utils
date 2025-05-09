@@ -10,21 +10,22 @@ from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, T
 from rich.table import Table
 
 # Internal imports
-try:
-	from ..utilities.count_lines import count_lines_mmap
-	from ..utilities.detect_encoding import detect_encoding
-	from ..database.backup import backup_db
-	from ..utilities.create_engine import main as create_engine
-	from ..utilities.collect_files import collect_files
-	from ..utilities.detect_delimiter import detect_delimiter
-except ImportError:
-	# Absolute import for standalone context
-	from sa_conversion_utils.utilities.count_lines import count_lines_mmap
-	from sa_conversion_utils.utilities.detect_encoding import detect_encoding
-	from sa_conversion_utils.database.backup import backup_db
-	from sa_conversion_utils.utilities.create_engine import main as create_engine
-	from sa_conversion_utils.utilities.collect_files import collect_files
-	from sa_conversion_utils.utilities.detect_delimiter import detect_delimiter
+# try:
+# 	from ..utils.count_lines import count_lines_mmap
+# 	from ..utils.detect_encoding import detect_encoding
+# 	from ..database.backup import backup_db
+# 	from ..utilities.create_engine import main as create_engine
+# 	from ..utilities.collect_files import collect_files
+# 	from ..utilities.detect_delimiter import detect_delimiter
+# except ImportError:
+
+# Absolute import for standalone context
+from sa_conversion_utils.utils.count_lines import count_lines_mmap
+from sa_conversion_utils.utils.detect_encoding import detect_encoding
+from sa_conversion_utils.database.backup import backup_db
+from sa_conversion_utils.utils.create_engine import main as create_engine
+from sa_conversion_utils.utils.collect_files import collect_files
+from sa_conversion_utils.utils.detect_delimiter import detect_delimiter
 
 console = Console()
 encodings = ['ISO-8859-1', 'latin1', 'cp1252', 'utf-8']

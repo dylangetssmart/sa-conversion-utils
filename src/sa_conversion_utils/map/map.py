@@ -3,8 +3,8 @@ import re
 import pandas as pd
 from rich.console import Console
 from rich.prompt import Confirm
-from sa_conversion_utils.utilities.create_engine import main as create_engine
-from sa_conversion_utils.utilities.setup_logger import setup_logger
+from sa_conversion_utils.utils.create_engine import main as create_engine
+from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 
 logger = setup_logger(__name__, log_file="map.log")
 

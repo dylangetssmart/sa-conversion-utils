@@ -1,9 +1,9 @@
 import os
 from sa_conversion_utils.database.backup import backup_db
 from sa_conversion_utils.run.sql_runner import sql_runner
-from sa_conversion_utils.utilities.setup_logger import setup_logger
+from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 from sa_conversion_utils.run.sort_scripts import sort_scripts_using_metadata
-from sa_conversion_utils.utilities.validate_dir import validate_input_dir
+from sa_conversion_utils.utils.validate_dir import validate_input_dir
 from rich.prompt import Confirm
 
 logger = setup_logger(__name__, log_file="run.log")

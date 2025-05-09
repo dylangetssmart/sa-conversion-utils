@@ -6,7 +6,8 @@ from rich.console import Console
 from rich.prompt import Confirm
 
 # Module imports
-from sa_conversion_utils.utilities.setup_logger import setup_logger
+from sa_conversion_utils.utils.logging.setup_logger import setup_logger
+from sa_conversion_utils.utils.user_config import load_user_config
 from sa_conversion_utils.database.backup import backup_db
 from sa_conversion_utils.database.restore import restore_db
 from sa_conversion_utils.run.run import run
@@ -17,13 +18,47 @@ from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
 logger = setup_logger(__name__, log_file="sami.log")
 console = Console()
 
+""" Config"""
+
+
 # Load environment variables
 BASE_DIR = os.path.dirname(__file__)
-load_dotenv(os.path.join(os.getcwd(), '.env'))
-SERVER = os.getenv('SERVER')
-SOURCE_DB = os.getenv('SOURCE_DB')
-SA_DB = os.getenv('TARGET_DB')
-SQL_DIR = os.getenv('SQL_DIR')
+
+
+# load_dotenv(os.path.join(os.getcwd(), '.env'))
+# SERVER = os.getenv('SERVER')
+# SOURCE_DB = os.getenv('SOURCE_DB')
+# SA_DB = os.getenv('TARGET_DB')
+# SQL_DIR = os.getenv('SQL_DIR')
+
+
+""" Load environment variables from .env file """
+
+config = load_user_config({
+    "SERVER": "Enter the SQL Server name",
+    "SOURCE_DB": "Enter the source database name",
+    "TARGET_DB": "Enter the target SmartAdvocate DB name",
+    "SQL_DIR": "Enter the SQL directory path",
+    "fruit": "Enter fruit",
+    "ice cream": "Enter ice cream"
+
+})
+
+logger.info(f"Config loaded from .env file: {config}")
+# for k, v in config.items():
+#     print(f"{k} = {v}")
+
+SERVER = config["SERVER"]
+SOURCE_DB = config["SOURCE_DB"]
+SA_DB = config["TARGET_DB"]
+SQL_DIR = config["SQL_DIR"]
+
+
+
+""""""
+
+
+
 
 def map(args):
     options = {

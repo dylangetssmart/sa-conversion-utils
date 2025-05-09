@@ -2,7 +2,7 @@ import yaml
 import re
 import argparse
 
-from sa_conversion_utils.utilities.setup_logger import setup_logger
+from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 logger = setup_logger(__name__, log_file="run.log")
 
 def read_yaml_metadata(file_path):
