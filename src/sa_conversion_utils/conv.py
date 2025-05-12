@@ -9,7 +9,7 @@ from rich.prompt import Confirm
 from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 from sa_conversion_utils.utils.user_config import load_user_config
 from sa_conversion_utils.database.backup import add_backup_parser
-from sa_conversion_utils.database.restore import restore_db
+from sa_conversion_utils.database.restore import add_restore_parser
 from sa_conversion_utils.run.run import add_run_parser
 from sa_conversion_utils.map.map import map as generate_mapping
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
@@ -46,26 +46,6 @@ def map(args):
          'input': args.input
     }
     generate_mapping(options)    
-
-# def backup(args):
-#     options = {
-#         'server': args.server or SERVER,
-#         'database': args.database or SA_DB,
-#         'output': args.output or os.path.join(os.getcwd(),'_backups'),
-#         'message': args.message
-#         # 'phase': args.phase,
-#         # 'group': args.group
-#     }
-#     backup_db(options)
-
-def restore(args):
-    options = {
-        'server': args.server or SERVER,
-        'database': args.database or SA_DB,
-        'message': args.message,
-        'virgin': args.virgin
-    }
-    restore_db(options)
 
 def encrypt(args):
     exe_path = r"C:\LocalConv\_utils\SSNEncryption\SSNEncryption.exe"
@@ -128,33 +108,13 @@ def main():
     )
     subparsers.required = True
 
-    """ ---------------------------------------------------------------------------------------------------------------------------------------------
-    Command: backup
-    """
+    # Command: backup
     add_backup_parser(subparsers)
-    # backup_parser = subparsers.add_parser('backup', help='Backup database')
-    # backup_parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
-    # backup_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
-    # # Flags
-    # backup_parser.add_argument('-o', '--output', help='Output directory. Defaults to /backups', metavar='')
-    # backup_parser.add_argument('-m', '--message', help='Optional message to include in the filename', metavar='')
-    # backup_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
-    # backup_parser.add_argument('--group', help='Script group for filename lookup. Only applicable if phase is "conv"', metavar='')
-    # backup_parser.set_defaults(func=backup)
 
-    """ ---------------------------------------------------------------------------------------------------------------------------------------------
-    Command: restore
-    """
-    restore_parser = subparsers.add_parser('restore', help='Restore database')
-    restore_parser.add_argument('-s', '--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
-    restore_parser.add_argument('-d', '--database', help='Name of database to restore. If not supplied, defaults to TARGET_DB from .env.', metavar='')
-    restore_parser.add_argument('-m', '--message', help='Message to search for in filename', metavar='')
-    restore_parser.add_argument('-v', '--virgin', action='store_true', help='Use hardcoded virgin SA database')
-    restore_parser.set_defaults(func=restore)
+    # Command: restore
+    add_restore_parser(subparsers)
 
-    """ ---------------------------------------------------------------------------------------------------------------------------------------------
-    Command: generate-mapping
-    """
+    # Command: map
     mapping_parser = subparsers.add_parser('map', help='Run SQL scripts in \\map and output the results to Excel.')
     # mapping_parser.add_argument('system', help='SQL Script sequence to execute.', choices=['needles'], type=str)
     # mapping_parser.add_argument('-s','--server', help='Server name. If not supplied, defaults to SERVER from .env.', metavar='')
@@ -201,12 +161,6 @@ def main():
     psql_to_csv_parser.set_defaults(func=handle_convert_psql_to_csv)
 
     args = parser.parse_args()
-    # config = merge_args_with_env(args)
-    # logger.debug(f"Config: {config}")
-
-    # Validate arguments
-    # if args.subcommand == 'run':
-    #     validate_args(args)
 
     if 'func' not in args:
         parser.print_help()
@@ -215,4 +169,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
