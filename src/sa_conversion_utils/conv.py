@@ -8,30 +8,19 @@ from rich.prompt import Confirm
 # Module imports
 from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 from sa_conversion_utils.utils.user_config import load_user_config
-from sa_conversion_utils.database.backup import backup_db
+from sa_conversion_utils.database.backup import add_backup_parser
 from sa_conversion_utils.database.restore import restore_db
-from sa_conversion_utils.run.run import run_sql_scripts, add_run_parser
+from sa_conversion_utils.run.run import add_run_parser
 from sa_conversion_utils.map.map import map as generate_mapping
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
 
 logger = setup_logger(__name__, log_file="sami.log")
 console = Console()
-
-
-
 BASE_DIR = os.path.dirname(__file__)
 
 
-# load_dotenv(os.path.join(os.getcwd(), '.env'))
-# SERVER = os.getenv('SERVER')
-# SOURCE_DB = os.getenv('SOURCE_DB')
-# SA_DB = os.getenv('TARGET_DB')
-# SQL_DIR = os.getenv('SQL_DIR')
-
-
 """ Load environment variables from .env file """
-
 config = load_user_config({
     "SERVER": "Enter the SQL Server name",
     "SOURCE_DB": "Enter the source database name",
@@ -50,12 +39,6 @@ SA_DB = config["TARGET_DB"]
 SQL_DIR = config["SQL_DIR"]
 
 
-
-""""""
-
-
-
-
 def map(args):
     options = {
         'server': args.server or SERVER,
@@ -64,79 +47,16 @@ def map(args):
     }
     generate_mapping(options)    
 
-def backup(args):
-    options = {
-        'server': args.server or SERVER,
-        'database': args.database or SA_DB,
-        'output': args.output or os.path.join(os.getcwd(),'_backups'),
-        'message': args.message
-        # 'phase': args.phase,
-        # 'group': args.group
-    }
-    backup_db(options)
-
-"""
-##############################################################################
-run
-"""
-
-# def run_conv(args):
-#     if not args.type:
-#         args.type = Prompt.ask(
-#             "[bold green]Select script group[/bold green]",
-#             choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla", "exit"],
-#             default="contact"
-#         )
-
-#     match args.type:
-#         case 'exit':
-#             console.print("[bold red]Exiting[/bold red]")
-#             return
-#         case 'all':
-#             args.all = True
-#             args.vanilla = False
-#             # input_path = f"sql\\conv\\"
-#             input_path = os.path.join(SQL_DIR, 'conv')
-#             if Confirm.ask("[bold green]Run all conversion scripts[/bold green]"):
-#                 run_common(args, input_path, is_all = True)
-#         case 'vanilla':
-#             args.vanilla = True
-#             args.all = True
-#             # input_path = f"sql\\conv\\"
-#             input_path = os.path.join(SQL_DIR, 'conv')
-#             if Confirm.ask("[bold green]Run vanilla conversion[/bold green]"):                
-#                 run_common(args, input_path, is_all = True)
-#         case _:
-#             # input_path = f"sql\\conv\\{args.type}"
-#             input_path = os.path.join(SQL_DIR, 'conv', f'{args.type}')
-#             if Confirm.ask(f"[bold green]Run {args.type} scripts[/bold green]"):
-#                 run_common(args, input_path, is_all = False)
-
-# def run_init(args):
-#     if Confirm.ask("[bold green]Run scripts in sql/init[/bold green]"):
-#         run_common(args, 'sql/init')
-
-# def run_post(args):
-#     if Confirm.ask("[bold green]Run scripts in sql/post[/bold green]"):
-#         run_common(args, 'sql/post')
-
-# def run_common(args, input_path = None):
-#     """Execute common logic for all commands."""
-#     # print(args)
-#     # Use input_path from argument or passed explicitly
-#     # input_path = input_path or args.input
-
+# def backup(args):
 #     options = {
 #         'server': args.server or SERVER,
 #         'database': args.database or SA_DB,
-#         'username': args.username,
-#         'password': args.password,
-#         'dev': args.dev,
-#         'debug': args.debug,
-#         'input': args.input or input_path,
-#         'use_metadata': args.metadata
+#         'output': args.output or os.path.join(os.getcwd(),'_backups'),
+#         'message': args.message
+#         # 'phase': args.phase,
+#         # 'group': args.group
 #     }
-#     run(options)
+#     backup_db(options)
 
 def restore(args):
     options = {
@@ -182,11 +102,14 @@ def handle_convert_psql_to_csv(args):
     }
     convert_psql_to_csv(options)
 
-# def validate_args(args):
-#     # Make `group` required only if `phase` is 'conv'
-#     if args.phase == 'conv' and not args.group:
-#         print("error: the following argument is required for 'conv' phase: group")
-#         sys.exit(1)
+def merge_args_with_env(args) -> dict:
+    return {
+        'server': args.server or SERVER,
+        'database': args.database or SA_DB,
+        'username': args.username,
+        'password': args.password,
+        'output': args.output,
+    }
 
 def main():
     parser = argparse.ArgumentParser(description='SmartAdvocate Data Conversion CLI.')
@@ -208,15 +131,16 @@ def main():
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: backup
     """
-    backup_parser = subparsers.add_parser('backup', help='Backup database')
-    backup_parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
-    backup_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
-    # Flags
-    backup_parser.add_argument('-o', '--output', help='Output directory. Defaults to /backups', metavar='')
-    backup_parser.add_argument('-m', '--message', help='Optional message to include in the filename', metavar='')
-    backup_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
-    backup_parser.add_argument('--group', help='Script group for filename lookup. Only applicable if phase is "conv"', metavar='')
-    backup_parser.set_defaults(func=backup)
+    add_backup_parser(subparsers)
+    # backup_parser = subparsers.add_parser('backup', help='Backup database')
+    # backup_parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
+    # backup_parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
+    # # Flags
+    # backup_parser.add_argument('-o', '--output', help='Output directory. Defaults to /backups', metavar='')
+    # backup_parser.add_argument('-m', '--message', help='Optional message to include in the filename', metavar='')
+    # backup_parser.add_argument('--phase', help='Script phase for filename lookup', metavar='')
+    # backup_parser.add_argument('--group', help='Script group for filename lookup. Only applicable if phase is "conv"', metavar='')
+    # backup_parser.set_defaults(func=backup)
 
     """ ---------------------------------------------------------------------------------------------------------------------------------------------
     Command: restore
@@ -238,51 +162,8 @@ def main():
     mapping_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
     mapping_parser.set_defaults(func=map)
 
-    """ ---------------------------------------------------------------------------------------------------------------------------------------------
-    Command: run
-    """
-    # run_parser = subparsers.add_parser('run', help='Run SQL scripts')
-    # # run_subparsers = run_parser.add_subparsers(title="run subcommands", dest="subcommand")
-    # run_parser.add_argument('-i', '--input', help='Input path of sql scripts', metavar='')
-    # run_parser.add_argument('--dev', action='store_true', help='Include scripts prefixed with _dev_, which are skipped by default')
-    # run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
-    # run_parser.add_argument('--metadata', action='store_true', help='Pauses execution after each script')
-    # run_parser.set_defaults(func=run_common)
-    # run_subparsers.required = False
-
+    # Command: run
     add_run_parser(subparsers)
-
-    # Subcommand: run > conv
-    # conv_parser = run_subparsers.add_parser('conv', help='Run scipts in /sql/conv/')
-    # conv_parser.add_argument("--type", type=str, choices=["init", "contact", "case", "intake", "misc", "udf", "all", "vanilla"], help="Type of conversion")
-    # conv_parser.set_defaults(func=run_conv)
-
-    # Subcommand: run > map
-    # map_parser = run_subparsers.add_parser('map', help='Execute mapping operations')
-    # map_parser.set_defaults(func=run_map)
-
-    # Subcommand: run > init
-    # init_parser = run_subparsers.add_parser('init', help='Initialize configurations')
-    # init_parser.set_defaults(func=run_init)
-
-    # Subcommand: run > post
-    # post_parser = run_subparsers.add_parser('post', help='Cleanup scripts')
-    # post_parser.set_defaults(func=run_post)
-
-    # Arguments
-    # run_parser.add_argument('-ph','--phase',choices=['map', 'conv', 'post', 'test'],metavar='phase',help='The phase of SQL scripts to run: {map, conv, post}')
-    # run_parser.add_argument('-gr','--group',nargs='?',choices=['config', 'contact', 'case', 'udf', 'misc', 'intake'],metavar='group',help='The specific group of scripts to run (required if phase = conv): {config, contact, case, udf, misc, intake}')
-    # Flags -------------------
-    # run_parser.add_argument('-s','--server', help='SQL Server. If omitted, defaults to SERVER from .env', metavar='')
-    # run_parser.add_argument('-d', '--database', help='Database. If omitted, defaults to SA_DB from .env', metavar='')
-    # run_parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
-    # run_parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
-    # # run_parser.add_argument('-i', '--input', help='Input path of sql scripts')
-    # run_parser.add_argument('-bu', '--backup', action='store_true', help='Backup database after script execution')
-    # run_parser.add_argument('--skip', action='store_true', help='Enable skipping scripts with "skip" in the filename')
-    # run_parser.add_argument('--debug', action='store_true', help='Pauses execution after each script')
-    # run_parser.add_argument('--all', action='store_true', help='Run all groups in the "conv" phase')
-    # run_parser.set_defaults(func=run)
     
     # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: encrypt
@@ -320,6 +201,8 @@ def main():
     psql_to_csv_parser.set_defaults(func=handle_convert_psql_to_csv)
 
     args = parser.parse_args()
+    # config = merge_args_with_env(args)
+    # logger.debug(f"Config: {config}")
 
     # Validate arguments
     # if args.subcommand == 'run':

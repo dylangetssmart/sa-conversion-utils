@@ -4,18 +4,52 @@ from datetime import datetime
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
+import argparse
+from sa_conversion_utils.utils.logging.setup_logger import setup_logger 
+from sa_conversion_utils.utils.user_config import load_user_config, REQUIRED_ENV_VARS
+from sa_conversion_utils.utils.validate_dir import validate_dir
+
+logger = setup_logger(__name__, log_file="backup.log")
 console = Console()
 
+def add_backup_parser(subparsers):
+    """Add the backup command to the parser."""
+    env_config = load_user_config(REQUIRED_ENV_VARS)
+    logger.debug(f"Loaded environment config: {env_config}")
+    
+    backup_parser = subparsers.add_parser("backup", help="Backup SQL Server database.")
+    backup_parser.add_argument("-s", "--server", default=env_config["SERVER"], help="SQL Server")
+    backup_parser.add_argument("-d", "--database", default=env_config["TARGET_DB"], help="Database")
+    backup_parser.add_argument("-o", "--output", default=os.path.join(os.getcwd(), "_backups"), help="Output path for the backup file.")
+    backup_parser.add_argument("-m", "--message", help="Message to include in the backup filename.")
+    backup_parser.set_defaults(func=handle_backup_command)
 
-def backup_db(options):
-    server = options.get('server')
-    database = options.get('database')
-    output_path = options.get('output')
-    message = options.get('message')
+def handle_backup_command(args):
+    """CLI dispatcher function for 'backup' subcommand."""
+    options = {
+        'server': args.server,
+        'database': args.database,
+        'output': args.output,
+        'message': args.message
+    }
+    backup_db(options)
+
+def backup_db(config: dict):
+    server = config.get('server')
+    database = config.get('database')
+    output_path = config.get('output')
+    message = config.get('message')
+    
+    # server = options.get('server')
+    # database = options.get('database')
+    # output_path = options.get('output')
+    # message = options.get('message')
     
     if not server:
+        logger.error("Missing SQL Server argument")    
         raise ValueError("Missing SQL Server argument")
     if not database:
+        logger.error("Missing database argument")
         raise ValueError("Missing database argument")
     if not message:
         message = Prompt.ask("Message to include in backup filename")
@@ -25,9 +59,10 @@ def backup_db(options):
     filename = f"{database}_{message}_{timestamp}.bak"
     backup_path = os.path.join(output_path, filename)
 
-    # Ensure the backup directory exists
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    # Check if the output directory exists, and create it if it doesn't
+    if not validate_dir(output_path, logger, create_if_missing=True):
+        logger.error(f"Failed to create backup directory: {output_path}")
+        raise ValueError(f"Failed to create backup directory: {output_path}")
 
     # Confirm the backup operation
     # https://learn.microsoft.com/en-us/sql/relational-databases/backup-restore/create-a-full-database-backup-sql-server?view=sql-server-ver16#TsqlProcedure
@@ -44,3 +79,23 @@ def backup_db(options):
             console.print(f"[green]Backup complete: {backup_path}.")
         except subprocess.CalledProcessError as error:
             console.print(f"[red]Error backing up database {database}: {error}")
+
+def main():
+    """Main CLI entry point"""
+    parser = argparse.ArgumentParser(description="Process SQL files and execute them in order.")
+    subparsers = parser.add_subparsers(help="Available commands")
+
+    # Add the 'run' command and its arguments
+    add_backup_parser(subparsers)
+
+    # Parse arguments and dispatch to the appropriate function
+    args = parser.parse_args()
+
+    # Call the function set by the parser (i.e., handle_run_command)
+    if hasattr(args, 'func'):
+        args.func(args)
+    else:
+        parser.print_help()
+
+if __name__ == "__main__":
+    main()
