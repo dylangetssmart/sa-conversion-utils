@@ -4,32 +4,7 @@ import time
 from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 
 logger = setup_logger(__name__, log_file="sql_runner.log")
-
-# Setup directories and logging
 BASE_DIR = os.getcwd()
-# LOGS_DIR = os.path.join(BASE_DIR, '_logs')
-# os.makedirs(LOGS_DIR, exist_ok=True)
-# RUN_LOG = os.path.join(LOGS_DIR, 'run.log')
-
-# # Configure logging
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
-
-# # File Handler (logs everything INFO and above)
-# file_handler = logging.FileHandler(os.path.join(LOGS_DIR, "run.log"))
-# file_handler.setLevel(logging.DEBUG)
-# file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
-# file_handler.setFormatter(file_formatter)
-
-# # Console Handler (only ERROR and above)
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.ERROR)
-# console_formatter = logging.Formatter("%(levelname)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s")
-# console_handler.setFormatter(console_formatter)
-
-# # Attach handlers
-# logger.addHandler(file_handler)
-# logger.addHandler(console_handler)
 
 def sql_runner(script_path: str, server: str, database: str, username=None, password=None):
     """

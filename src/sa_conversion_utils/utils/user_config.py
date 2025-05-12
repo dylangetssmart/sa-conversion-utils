@@ -7,9 +7,13 @@ from rich.prompt import Prompt, Confirm
 
 logger = setup_logger(__name__, log_file="sami.log")
 
-# ENV_PATH = Path(".env")
 ENV_PATH = os.path.join(os.getcwd(), '.env')
 logger.debug(f"ENV_PATH: {ENV_PATH}")
+
+REQUIRED_ENV_VARS = {
+    "SERVER": "Enter the SQL Server name",
+    "TARGET_DB": "Enter the SQL database name",
+}
 
 def get_or_prompt_env(key: str, prompt: str) -> str:
     """Get an env var from .env or prompt the user and store it."""
