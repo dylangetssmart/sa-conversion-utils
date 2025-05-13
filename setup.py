@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="sa-conversion-utils",
-    version="0.0.10",
+    version="1.0.0",
     description="SmartAdvocate conversion utilities.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -33,7 +33,7 @@ setup(
         "openpyxl",
         "chardet",
         "pyyaml",
-        # "tkinter"
+        "tkinter"
     ],
     extras_require={
         "dev": ["pytest>=7.0", "twine>=4.0.2"],

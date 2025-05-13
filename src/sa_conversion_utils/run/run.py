@@ -90,7 +90,8 @@ def run(config: dict):
             server=server,
             database=database,
             username=username,
-            password=password
+            password=password,
+            logger=logger
         )
 
     # Optionally back up the database after execution

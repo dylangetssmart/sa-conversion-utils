@@ -127,8 +127,8 @@ def map(options):
     engine = create_engine(server=server, database=database)
 
     user_columns = {
-        "SmartAdvocate Section": None,
         "SmartAdvocate Screen": None,
+        "SmartAdvocate Section": None,
         "SmartAdvocate Field": None,
         "Contact Role": None,
         "Contact Category": None,
