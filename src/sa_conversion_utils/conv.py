@@ -203,31 +203,31 @@ def main():
 
     # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: export
-    export_parser = subparsers.add_parser("export", help="Export data from a database")
-    export_subparsers = export_parser.add_subparsers(
-        title="Supported exports", dest="convert_variant"
-    )
+    # export_parser = subparsers.add_parser("export", help="Export data from a database")
+    # export_subparsers = export_parser.add_subparsers(
+    #     title="Supported exports", dest="convert_variant"
+    # )
 
-    # Subcommand: convert psql-to-csv
-    psql_to_csv_parser = export_subparsers.add_parser(
-        "psql-csv", help="Export PostgreSQL tables to .csv"
-    )
-    psql_to_csv_parser.add_argument(
-        "-s", "--server", required=True, help="PostgreSQL hostname"
-    )
-    psql_to_csv_parser.add_argument(
-        "-d", "--database", required=True, help="PostgreSQL database name"
-    )
-    psql_to_csv_parser.add_argument(
-        "-u", "--username", required=True, help="PostgreSQL username"
-    )
-    psql_to_csv_parser.add_argument(
-        "-p", "--password", required=True, help="PostgreSQL password"
-    )
-    psql_to_csv_parser.add_argument(
-        "-o", "--output", required=True, help="Output path for .csv files"
-    )
-    psql_to_csv_parser.set_defaults(func=handle_convert_psql_to_csv)
+    # # Subcommand: convert psql-to-csv
+    # psql_to_csv_parser = export_subparsers.add_parser(
+    #     "psql-csv", help="Export PostgreSQL tables to .csv"
+    # )
+    # psql_to_csv_parser.add_argument(
+    #     "-s", "--server", required=True, help="PostgreSQL hostname"
+    # )
+    # psql_to_csv_parser.add_argument(
+    #     "-d", "--database", required=True, help="PostgreSQL database name"
+    # )
+    # psql_to_csv_parser.add_argument(
+    #     "-u", "--username", required=True, help="PostgreSQL username"
+    # )
+    # psql_to_csv_parser.add_argument(
+    #     "-p", "--password", required=True, help="PostgreSQL password"
+    # )
+    # psql_to_csv_parser.add_argument(
+    #     "-o", "--output", required=True, help="Output path for .csv files"
+    # )
+    # psql_to_csv_parser.set_defaults(func=handle_convert_psql_to_csv)
 
     args = parser.parse_args()
 

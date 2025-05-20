@@ -84,6 +84,10 @@ def restore_db(config: dict):
     backup_dir = config.get("backup_dir", "_backups")
     virgin = config.get("virgin", False)
 
+    # Lazy load environment variables with defaults
+    server = server or os.getenv("SERVER")
+    database = database or os.getenv("TARGET_DB")
+
     if not server:
         logger.error("Missing SQL Server argument")
         raise ValueError("Missing SQL Server argument")
@@ -204,18 +208,11 @@ def handle_restore_command(args):
 
 def add_restore_parser(subparsers):
     """Adds the backup restore command to the argument parser."""
-    env_config = load_user_config(REQUIRED_ENV_VARS)
-    logger.debug(f"Loaded environment config: {env_config}")
-
     restore_parser = subparsers.add_parser(
         "restore", help="Restore a database from a backup file"
     )
-    restore_parser.add_argument(
-        "--server", default=env_config["SERVER"], help="SQL Server instance"
-    )
-    restore_parser.add_argument(
-        "--database", default=env_config["TARGET_DB"], help="Database to restore"
-    )
+    restore_parser.add_argument("--server", help="SQL Server instance")
+    restore_parser.add_argument("--database", help="Database to restore")
     restore_parser.add_argument(
         "--message", help="Optional message to match in backup file"
     )
