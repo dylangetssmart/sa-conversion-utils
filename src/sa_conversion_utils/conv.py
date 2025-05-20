@@ -13,7 +13,7 @@ from sa_conversion_utils.database.restore import add_restore_parser
 from sa_conversion_utils.run.run import add_run_parser
 from sa_conversion_utils.map.map import map as generate_mapping
 from sa_conversion_utils.export.export import add_export_parser
-
+from sa_conversion_utils.config.config import add_config_parser
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
 
@@ -23,22 +23,27 @@ BASE_DIR = os.path.dirname(__file__)
 
 
 """ Load environment variables from .env file """
-config = load_user_config({
-    "SERVER": "Enter the SQL Server name",
-    "SOURCE_DB": "Enter the source database name",
-    "TARGET_DB": "Enter the target SmartAdvocate DB name",
-    "SQL_DIR": "Enter the SQL directory path",
+# config = load_user_config({
+#     "SERVER": "Enter the SQL Server name",
+#     "SOURCE_DB": "Enter the source database name",
+#     "TARGET_DB": "Enter the target SmartAdvocate DB name",
+#     "SQL_DIR": "Enter the SQL directory path",
 
-})
+# })
 
-logger.debug(f"Config loaded from .env file: \n{config}")
-# for k, v in config.items():
-#     print(f"{k} = {v}")
+# logger.debug(f"Config loaded from .env file: \n{config}")
+# # for k, v in config.items():
+# #     print(f"{k} = {v}")
 
-SERVER = config["SERVER"]
-SOURCE_DB = config["SOURCE_DB"]
-SA_DB = config["TARGET_DB"]
-SQL_DIR = config["SQL_DIR"]
+# SERVER = config["SERVER"]
+# SOURCE_DB = config["SOURCE_DB"]
+# SA_DB = config["TARGET_DB"]
+# SQL_DIR = config["SQL_DIR"]
+
+SERVER = 'dylans\\msqlserver2022'
+SOURCE_DB = 'VanceLawFirm_Needles'
+SA_DB = 'VanceLawFirm_SA'
+SQL_DIR = 'needles\\conversion'
 
 
 def map(args):
@@ -49,7 +54,7 @@ def map(args):
     }
     generate_mapping(options)    
 
-def encrypt(args):
+def encrypt():
     exe_path = r"C:\LocalConv\_utils\SSNEncryption\SSNEncryption.exe"
     try:
         # Execute the SSNEncryption.exe
@@ -97,11 +102,11 @@ def main():
     parser = argparse.ArgumentParser(description='SmartAdvocate Data Conversion CLI.')
 
     # Global flags
-    parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
-    parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
-    parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
-    parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
-    parser.add_argument('-o', '--output', help='Output directory.', metavar='')
+    # parser.add_argument('-s', '--server', help='Server name. Defaults to SERVER from .env', metavar='')
+    # parser.add_argument('-d', '--database', help='Database name. Defaults to SA_DB from .env', metavar='')
+    # parser.add_argument('-u', '--username', help='SQL Server username. If omitted, a trusted connection is used.', metavar='')
+    # parser.add_argument('-p', '--password', help='SQL Server password. If omitted, a trusted connection is used.', metavar='')
+    # parser.add_argument('-o', '--output', help='Output directory.', metavar='')
     
     # Subcommands
     subparsers = parser.add_subparsers(
@@ -109,6 +114,9 @@ def main():
         dest='subcommand'
     )
     subparsers.required = True
+
+    # Command: config
+    add_config_parser(subparsers)
 
     # Command: backup
     add_backup_parser(subparsers)
@@ -128,7 +136,7 @@ def main():
     add_run_parser(subparsers)
     
     # command: export
-    add_export_parser(subparsers)
+    # add_export_parser(subparsers)
     # export_parser = subparsers.add_parser('export', help='Export data from a database')
 
     # ---------------------------------------------------------------------------------------------------------------------------------------------
