@@ -102,11 +102,11 @@ def export(options):
     database = options["database"]
     output_dir = options["output"]
     table_names = options["tables"]
-    delimiter = options["delimiter"]
-    quotechar = options["quotechar"]
-    null_string = options["null_string"]
-    header = options["header"]
-    encoding = options["encoding"]
+    # delimiter = options["delimiter"]
+    # quotechar = options["quotechar"]
+    # null_string = options["null_string"]
+    # header = options["header"]
+    # encoding = options["encoding"]
 
     validate_dir(output_dir, logger)  # Ensure the output directory is valid
 
@@ -119,6 +119,7 @@ def export(options):
             user=user,
             password=password,
             output_dir=output_dir,
+            table_names=table_names,
         )
     # _export_psql_to_csv(
     #     server,
