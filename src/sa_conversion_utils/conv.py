@@ -12,6 +12,8 @@ from sa_conversion_utils.database.backup import add_backup_parser
 from sa_conversion_utils.database.restore import add_restore_parser
 from sa_conversion_utils.run.run import add_run_parser
 from sa_conversion_utils.map.map import map as generate_mapping
+from sa_conversion_utils.export.export import add_export_parser
+
 from sa_conversion_utils.convert.flat_to_sql import main as import_flat_file
 from sa_conversion_utils.convert.psql_to_csv import main as convert_psql_to_csv
 
@@ -125,6 +127,10 @@ def main():
     # Command: run
     add_run_parser(subparsers)
     
+    # command: export
+    add_export_parser(subparsers)
+    # export_parser = subparsers.add_parser('export', help='Export data from a database')
+
     # ---------------------------------------------------------------------------------------------------------------------------------------------
     # Command: encrypt
     encrypt_parser = subparsers.add_parser('encrypt', help='Run SSN Encryption')
