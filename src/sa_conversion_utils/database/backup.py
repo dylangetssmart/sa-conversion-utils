@@ -9,9 +9,11 @@ from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 from sa_conversion_utils.config.user_config import load_user_config, REQUIRED_ENV_VARS
 from sa_conversion_utils.utils.validate_dir import validate_dir
 
+from dotenv import load_dotenv
+
 logger = setup_logger(__name__, log_file="backup.log")
 console = Console()
-
+load_dotenv()
 
 def add_backup_parser(subparsers):
     """Add the backup command to the parser."""
@@ -36,8 +38,8 @@ def add_backup_parser(subparsers):
 def handle_backup_command(args):
     """CLI dispatcher function for 'backup' subcommand."""
     options = {
-        "server": args.server,
-        "database": args.database,
+        "server": args.server or os.getenv("SERVER"),
+        "database": args.database or os.getenv("TARGET_DB"),
         "output": args.output,
         "message": args.message,
     }
@@ -51,8 +53,8 @@ def backup_db(config: dict):
     message = config.get("message")
 
     # Lazy load environment variables with defaults
-    server = server or os.getenv("SERVER")
-    database = database or os.getenv("TARGET_DB")
+    # server = server or os.getenv("SERVER")
+    # database = database or os.getenv("TARGET_DB")
 
     if not server:
         logger.error("Missing SQL Server argument")

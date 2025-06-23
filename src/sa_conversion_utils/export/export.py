@@ -11,7 +11,7 @@ from rich.prompt import Prompt, Confirm
 from rich.console import Console
 
 logger = setup_logger(__name__, log_file="export.log")
-
+console = Console()
 
 def add_export_parser(subparsers):
     """Add the export command to the parser."""
@@ -134,15 +134,15 @@ def export(options):
     # )
     elif source_type == "sql" and target_type == "sql":
         #  Add your SQL to SQL export logic here.
-        print("SQL to SQL export not yet implemented")
+        console.print("[bright-yellow]SQL to SQL export not yet implemented[/bright-yellow]")
         logger.error("SQL to SQL export not yet implemented")
     elif source_type == "sql" and target_type == "csv":
         # Add your SQL to CSV export.
-        print("SQL to CSV export not yet implemented")
+        console.print("[bright-yellow]SQL to CSV export not yet implemented[/bright-yellow]")
         logger.error("SQL to CSV export not yet implemented")
     elif source_type == "psql" and target_type == "sql":
         # Add your psql to sql export
-        print("Postgres to SQL export not yet implemented")
+        console.print("[bright-yellow]Postgres to SQL export not yet implemented[/bright-yellow]")
         logger.error("Postgres to SQL export not yet implemented")
     else:
         print(

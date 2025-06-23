@@ -33,6 +33,7 @@ setup(
         "openpyxl",
         "chardet",
         "pyyaml",
+        "psycopg"
         # "tkinter"
     ],
     extras_require={

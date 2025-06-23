@@ -60,7 +60,7 @@ def save_to_excel(dataframes, output_path):
     except Exception as e:
         logger.error(f"An error occurred while saving the Excel file: {e}")
 
-def process_sql_files(mapping_dir, engine, user_columns, party_role_columns):
+def process_sql_files(mapping_dir, engine, special_columns_map):
     """Process SQL files in the mapping directory and execute their queries."""
     PRIORITY_ORDER = [
         'Case Types',
@@ -70,10 +70,8 @@ def process_sql_files(mapping_dir, engine, user_columns, party_role_columns):
         'Intake'
     ]
 
-    # 1. Get all .sql filenames
     all_sql_files = [f for f in os.listdir(mapping_dir) if f.endswith('.sql')]
 
-    # 2. Sort filenames by PRIORITY_ORDER first, then alphabetically
     def sort_key(filename):
         sheet_name = os.path.splitext(filename)[0]
         try:
@@ -82,10 +80,8 @@ def process_sql_files(mapping_dir, engine, user_columns, party_role_columns):
             return (float('inf'), sheet_name)
 
     sorted_files = sorted(all_sql_files, key=sort_key)
-
     dataframes = {}
 
-    # for filename in os.listdir(mapping_dir):
     for filename in sorted_files:
         if filename.endswith('.sql'):
             full_file_path = os.path.join(mapping_dir, filename)
@@ -94,12 +90,14 @@ def process_sql_files(mapping_dir, engine, user_columns, party_role_columns):
                 with open(full_file_path, 'r') as file:
                     query = file.read().strip()
 
-                    if 'Party Roles' in filename.lower():
-                        df = execute_query(query, engine, additional_columns=party_role_columns)
-                    elif 'Value Codes' in filename.lower() or 'user' in filename.lower():
-                        df = execute_query(query, engine, additional_columns=user_columns)
-                    else:
-                        df = execute_query(query, engine)
+                    # Find matching special columns by filename pattern
+                    additional_columns = None
+                    for pattern, columns in special_columns_map.items():
+                        if pattern in filename.lower():
+                            additional_columns = columns
+                            break
+
+                    df = execute_query(query, engine, additional_columns=additional_columns)
 
                     if not df.empty:
                         dataframes[sheet_name] = df
@@ -126,23 +124,37 @@ def map(options):
 
     engine = create_engine(server=server, database=database)
 
-    user_columns = {
-        "SmartAdvocate Screen": None,
-        "SmartAdvocate Section": None,
-        "SmartAdvocate Field": None,
-        "Contact Role": None,
-        "Contact Category": None,
-        "Contact Type": None,
-        "Comment": None
-    }
-
-    party_role_columns = {
-        "SA Role": None,
-        "SA Party": None
+    # Map filename patterns to their special columns
+    special_columns_map = {
+        'party roles': {
+            "SA Role": None,
+            "SA Party": None
+        },
+        'value codes': {
+            "SmartAdvocate Screen": None,
+            "SmartAdvocate Section": None,
+            "SmartAdvocate Field": None,
+            "Contact Role": None,
+            "Contact Category": None,
+            "Contact Type": None,
+            "Comment": None
+        },
+        'user': {
+            "SmartAdvocate Screen": None,
+            "SmartAdvocate Section": None,
+            "SmartAdvocate Field": None,
+            "Contact Role": None,
+            "Contact Category": None,
+            "Contact Type": None,
+            "Comment": None
+        },
+        'case staff': {
+            'SmartAdvocate Role': None
+        }
     }
 
     # Process SQL files
-    dataframes = process_sql_files(input_dir, engine, user_columns, party_role_columns)
+    dataframes = process_sql_files(input_dir, engine, special_columns_map)
 
     # Save results to Excel
     parent_dir_name = os.path.basename(os.path.abspath(os.getcwd()))

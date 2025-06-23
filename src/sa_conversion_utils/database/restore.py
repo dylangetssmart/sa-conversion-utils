@@ -3,6 +3,7 @@ import os
 import subprocess
 import tkinter as tk
 import argparse
+from dotenv import load_dotenv
 
 # Third Party Imports
 from tkinter import filedialog
@@ -17,6 +18,7 @@ from sa_conversion_utils.utils.validate_dir import validate_dir
 # Global Constants
 logger = setup_logger(__name__, log_file="restore.log")
 console = Console()
+load_dotenv()
 
 """
 Helper Functions

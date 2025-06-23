@@ -7,9 +7,10 @@ from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 from sa_conversion_utils.utils.validate_dir import validate_dir
 from sa_conversion_utils.config.user_config import load_user_config, REQUIRED_ENV_VARS
 from rich.prompt import Confirm
+from dotenv import load_dotenv
 
 logger = setup_logger(__name__, log_file="run.log")
-
+load_dotenv()
 
 def add_run_parser(subparsers):
     """Add the run command to the parser."""
@@ -61,8 +62,8 @@ def collect_scripts(input_dir, use_metadata):
 
 
 def run(config: dict):
-    server = config.get("server")
-    database = config.get("database")
+    server = config.get("server") or os.getenv("SERVER")
+    database = config.get("database") or os.getenv("TARGET_DB")
     username = config.get("username")
     password = config.get("password")
     input_dir = config.get("input")
@@ -75,8 +76,10 @@ def run(config: dict):
     # use_metadata = options.get('use_metadata', False)
 
     # Lazy load environment variables with defaults
-    server = server or os.getenv("SERVER")
-    database = database or os.getenv("TARGET_DB")
+    # server = server or os.getenv("SERVER")
+    # database = database or os.getenv("TARGET_DB")
+    print("config:", config)
+    # print(f"server: {server}, database: {database}, input_dir: {input_dir}, use_metadata: {use_metadata}")  
 
     # logger.debug(f"Run started with options: {config}")
 

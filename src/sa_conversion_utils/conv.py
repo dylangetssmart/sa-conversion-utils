@@ -23,7 +23,7 @@ from sa_conversion_utils.export.export import add_export_parser
 logger = setup_logger(__name__, log_file="sami.log")
 console = Console()
 BASE_DIR = os.path.dirname(__file__)
-
+load_dotenv()
 
 """ Load environment variables from .env file """
 # config = load_user_config({
@@ -43,22 +43,22 @@ BASE_DIR = os.path.dirname(__file__)
 # SA_DB = config["TARGET_DB"]
 # SQL_DIR = config["SQL_DIR"]
 
-SERVER = "dylans\\msqlserver2022"
-SOURCE_DB = "VanceLawFirm_Needles"
-SA_DB = "VanceLawFirm_SA"
-SQL_DIR = "needles\\conversion"
+# SERVER = "dylans\\msqlserver2022"
+# SOURCE_DB = "VanceLawFirm_Needles"
+# SA_DB = "VanceLawFirm_SA"
+# SQL_DIR = "needles\\conversion"
 
 
 def map(args):
     options = {
-        "server": args.server or SERVER,
-        "database": args.database or SOURCE_DB,
+        "server": args.server or os.getenv('SERVER'),
+        "database": args.database or os.getenv('SOURCE_DB'),
         "input": args.input,
     }
     generate_mapping(options)
 
 
-def encrypt():
+def encrypt(args):
     exe_path = r"C:\LocalConv\_utils\SSNEncryption\SSNEncryption.exe"
     try:
         # Execute the SSNEncryption.exe
@@ -74,8 +74,8 @@ def encrypt():
 
 def handle_import_flat_file(args):
     options = {
-        "server": args.server or SERVER,
-        "database": args.database or SA_DB,
+        "server": args.server or os.getenv('SERVER'),
+        "database": args.database or os.getenv('SOURCE_DB'),
         "username": args.username,
         "password": args.password,
         "input_path": args.input,
@@ -98,8 +98,8 @@ def handle_convert_psql_to_csv(args):
 
 def merge_args_with_env(args) -> dict:
     return {
-        "server": args.server or SERVER,
-        "database": args.database or SA_DB,
+        "server": args.server or os.getenv('SERVER'),
+        "database": args.database or os.getenv('SOURCE_DB'),
         "username": args.username,
         "password": args.password,
         "output": args.output,

@@ -56,7 +56,7 @@ def export_all_tables_to_csv(
                                         f"Exported {table_name} to {file_path}"
                                     )
                     except psycopg.Error as e:
-                        console.print(f"[bright-red]Error exporting {table_name}: {e}[bright-red]")
+                        console.print(f"[bright-red]Error exporting {table_name}: {e}[/bright-red]")
                         continue
 
-        console.print("[bright-green]All tables exported.[bright-green]")
+        console.print("[bright-green]All tables exported.[/bright-green]")
