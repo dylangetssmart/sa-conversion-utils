@@ -10,7 +10,7 @@ from rich.prompt import Confirm
 from dotenv import load_dotenv
 
 logger = setup_logger(__name__, log_file="run.log")
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
 
 def add_run_parser(subparsers):
     """Add the run command to the parser."""

@@ -18,7 +18,7 @@ from sa_conversion_utils.utils.validate_dir import validate_dir
 # Global Constants
 logger = setup_logger(__name__, log_file="restore.log")
 console = Console()
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
 
 """
 Helper Functions

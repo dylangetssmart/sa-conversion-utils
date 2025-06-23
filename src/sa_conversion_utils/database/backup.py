@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 logger = setup_logger(__name__, log_file="backup.log")
 console = Console()
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
 
 def add_backup_parser(subparsers):
     """Add the backup command to the parser."""
@@ -47,6 +47,8 @@ def handle_backup_command(args):
 
 
 def backup_db(config: dict):
+    print(config)
+    print(os.getenv("SERVER"), os.getenv("TARGET_DB"))
     server = config.get("server")
     database = config.get("database")
     output_path = config.get("output")
