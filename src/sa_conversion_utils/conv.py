@@ -49,13 +49,13 @@ load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment v
 # SQL_DIR = "needles\\conversion"
 
 
-def map(args):
-    options = {
-        "server": args.server or os.getenv('SERVER'),
-        "database": args.database or os.getenv('SOURCE_DB'),
-        "input": args.input,
-    }
-    generate_mapping(options)
+# def map(args):
+#     options = {
+#         "server": args.server or os.getenv('SERVER'),
+#         "database": args.database or os.getenv('SOURCE_DB'),
+#         "input": args.input,
+#     }
+#     generate_mapping(options)
 
 
 def encrypt(args):
