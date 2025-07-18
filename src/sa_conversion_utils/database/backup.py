@@ -47,8 +47,8 @@ def handle_backup_command(args):
 
 
 def backup_db(config: dict):
-    print(config)
-    print(os.getenv("SERVER"), os.getenv("TARGET_DB"))
+    # print(config)
+    # print(os.getenv("SERVER"), os.getenv("TARGET_DB"))
     server = config.get("server")
     database = config.get("database")
     output_path = config.get("output")

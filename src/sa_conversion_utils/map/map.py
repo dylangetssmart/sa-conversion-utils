@@ -5,10 +5,11 @@ from rich.console import Console
 from rich.prompt import Confirm
 from sa_conversion_utils.utils.create_engine import main as create_engine
 from sa_conversion_utils.utils.logging.setup_logger import setup_logger
+from dotenv import load_dotenv
 
 logger = setup_logger(__name__, log_file="map.log")
-
 console = Console()
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
 
 # Utility functions
 def clean_string(value):
@@ -109,9 +110,10 @@ def process_sql_files(mapping_dir, engine, special_columns_map):
 
 def map(options):
     """Main function to process SQL files and save results to an Excel file."""
-    server = options.get('server')
-    database = options.get('database')
+    server = options.get("server") or os.getenv("SERVER")
+    database = options.get("database") or os.getenv("TARGET_DB")
     input_dir = options.get('input')
+
 
     if not Confirm.ask(f"Run [bold blue]{input_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
         logger.info(f"Execution skipped for {input_dir}.")

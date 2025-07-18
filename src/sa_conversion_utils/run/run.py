@@ -78,7 +78,7 @@ def run(config: dict):
     # Lazy load environment variables with defaults
     # server = server or os.getenv("SERVER")
     # database = database or os.getenv("TARGET_DB")
-    print("config:", config)
+    # print("config:", config)
     # print(f"server: {server}, database: {database}, input_dir: {input_dir}, use_metadata: {use_metadata}")  
 
     # logger.debug(f"Run started with options: {config}")
