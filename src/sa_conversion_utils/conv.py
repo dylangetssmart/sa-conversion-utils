@@ -23,7 +23,7 @@ from sa_conversion_utils.export.export import add_export_parser
 logger = setup_logger(__name__, log_file="sami.log")
 console = Console()
 BASE_DIR = os.path.dirname(__file__)
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
 
 """ Load environment variables from .env file """
 # config = load_user_config({
