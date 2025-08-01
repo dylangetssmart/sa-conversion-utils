@@ -1,3 +1,4 @@
+import time
 import os
 import argparse
 from sa_conversion_utils.database.backup import backup_db
@@ -7,42 +8,16 @@ from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 from sa_conversion_utils.utils.validate_dir import validate_dir
 from sa_conversion_utils.config.user_config import load_user_config, REQUIRED_ENV_VARS
 from rich.prompt import Confirm
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TaskProgressColumn
+from rich.console import Console
+from rich.progress import track
+
+
 from dotenv import load_dotenv
 
+console = Console()
 logger = setup_logger(__name__, log_file="run.log")
 load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
-
-def add_run_parser(subparsers):
-    """Add the run command to the parser."""
-    # env_config = load_user_config(REQUIRED_ENV_VARS)
-    # logger.debug(f"Loaded environment config: {env_config}")
-
-    run_parser = subparsers.add_parser("run", help="Run SQL scripts in order.")
-    run_parser.add_argument("-s", "--server", help="SQL Server")
-    run_parser.add_argument("-d", "--database", help="Database")
-    run_parser.add_argument(
-        "-i",
-        "--input",
-        required=True,
-        help="Path to the input folder containing SQL files.",
-    )
-    run_parser.add_argument(
-        "--metadata",
-        action="store_true",
-        help="Use metadata to determine script execution order.",
-    )
-    run_parser.set_defaults(func=handle_run_command)
-
-
-def handle_run_command(args):
-    """CLI dispatcher function for 'run' subcommand."""
-    options = {
-        "server": args.server,
-        "database": args.database,
-        "input": args.input,
-        "use_metadata": args.metadata,
-    }
-    run(options)
 
 
 def collect_scripts(input_dir, use_metadata):
@@ -103,18 +78,41 @@ def run(config: dict):
         logger.info(f"Execution skipped for {input_dir}.")
         return
 
-    # Execute each script individually
-    for script in scripts:
-        script_path = os.path.join(input_dir, script)
-        # execute_script(script_path, server, database, username, password)
-        sql_runner(
-            script_path=script_path,
-            server=server,
-            database=database,
-            username=username,
-            password=password,
-            logger=logger,
-        )
+    with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            "•",
+            TimeElapsedColumn(),
+            "•",
+            TextColumn("{task.completed:,}/{task.total:,}"),
+            console=console,
+            transient=False # Keep the bar visible after completion
+            # redirect_stderr=True, # Ensure stderr goes through Rich
+            # redirect_stdout=True # Ensure stdout goes through Rich
+        ) as progress:
+            
+            overall_task = progress.add_task(f"[cyan]Executing SQL Scripts", total=len(scripts))
+
+            for script in scripts:
+                script_path = os.path.join(input_dir, script)
+                
+                progress.update(overall_task, description=f"[cyan]Running {script}")
+                
+                sql_runner(
+                    script_path=script_path,
+                    server=server,
+                    database=database,
+                    username=username,
+                    password=password,
+                    logger=logger,
+                    progress=progress,
+                )
+                   
+                progress.advance(overall_task)
+            
+            progress.update(overall_task, description=f"[green]SQL Script Execution Complete")
 
     # Optionally back up the database after execution
     if Confirm.ask(f"SQL scripts completed. Backup {database}?"):
@@ -126,6 +124,40 @@ def run(config: dict):
                 "output": os.path.join(os.getcwd(), "_backups"),
             }
         )
+
+
+""" CLI Integration """
+def handle_run_command(args):
+    """CLI dispatcher function for 'run' subcommand."""
+    options = {
+        "server": args.server,
+        "database": args.database,
+        "input": args.input,
+        "use_metadata": args.metadata,
+    }
+    run(options)
+
+
+def add_run_parser(subparsers):
+    """Add the run command to the parser."""
+    # env_config = load_user_config(REQUIRED_ENV_VARS)
+    # logger.debug(f"Loaded environment config: {env_config}")
+
+    run_parser = subparsers.add_parser("run", help="Run SQL scripts in order.")
+    run_parser.add_argument("-s", "--server", help="SQL Server")
+    run_parser.add_argument("-d", "--database", help="Database")
+    run_parser.add_argument(
+        "-i",
+        "--input",
+        required=True,
+        help="Path to the input folder containing SQL files.",
+    )
+    run_parser.add_argument(
+        "--metadata",
+        action="store_true",
+        help="Use metadata to determine script execution order.",
+    )
+    run_parser.set_defaults(func=handle_run_command)
 
 
 def main():
