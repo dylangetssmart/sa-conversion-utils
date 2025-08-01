@@ -1,12 +1,19 @@
 import subprocess
 import os
 import time
-# from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 
-# logger = setup_logger(__name__, log_file="sql_runner.log")
 BASE_DIR = os.getcwd()
 
-def sql_runner(script_path: str, server: str, database: str, username=None, password=None, logger=None):
+def sql_runner(
+        script_path: str,
+        server: str,
+        database: str,
+        username=None,
+        password=None,
+        logger=None,
+        progress=None,
+        script_task=None,
+    ):
     """
     Executes a SQL script using sqlcmd.
 
@@ -45,26 +52,35 @@ def sql_runner(script_path: str, server: str, database: str, username=None, pass
             text=True,
             check=True
         )
+
         duration = time.time() - start_time
         output = result.stdout.strip() if result.stdout else "(No output)"
         msg = f"PASS: {script_name} in {duration:.2f}s\n{output}"
-        logger.info(f"PASS: {script_name}")
+
+        # logger.info(f"PASS: {script_name}")
         logger.debug(f"Script output: {output}")
+
+        if progress:
+            progress.console.print(f"[green]PASS: {script_name} ")
+            # progress.update(run_task, advance=1)
 
     except subprocess.CalledProcessError as e:
         duration = time.time() - start_time
         output = (e.stdout or '') + (e.stderr or '')
         output = output.strip() if output else str(e)
 
-        logger.error(f"FAIL: {script_name}")
+        # logger.error(f"FAIL: {script_name}")
         logger.debug(f"FAIL: {script_name} in {duration:.2f}s\n{output}")
+
+        if progress:
+            progress.console.print(f"[red]FAIL: {script_name} ")
 
         # raise RuntimeError(f"ERROR: {script_name}") from e
 
     except Exception as e:
         logger.exception(f"Unexpected error while executing script: {script_name}")
         raise
-# For manual test runs
+
 if __name__ == "__main__":
     import argparse
 
