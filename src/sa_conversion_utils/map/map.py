@@ -1,29 +1,21 @@
 import os
-import re
+import argparse
 import pandas as pd
 from rich.console import Console
 from rich.prompt import Confirm
+from dotenv import load_dotenv
+
 from sa_conversion_utils.utils.create_engine import main as create_engine
 from sa_conversion_utils.utils.logging.setup_logger import setup_logger
-from dotenv import load_dotenv
+from sa_conversion_utils.utils.sanitize_utils import sanitize_dataframe
 
 logger = setup_logger(__name__, log_file="map.log")
 console = Console()
-load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
+load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
 
-# Utility functions
-def clean_string(value):
-    """Remove non-printable or control characters from a string."""
-    if isinstance(value, str):
-        return re.sub(r'[\x00-\x1F\x7F-\x9F]', '', value)
-    return value
-
-def sanitize_dataframe(df):
-    """Sanitize a DataFrame by cleaning its string values."""
-    return df.map(clean_string)
 
 def execute_query(query, engine, additional_columns=None):
-    """Execute a SQL query and return the result as a DataFrame."""
+    """Use pandas read_sql_query to execute a SQL query and return the result as a DataFrame."""
     try:
 
         # Remove USE statement from the query
@@ -31,7 +23,7 @@ def execute_query(query, engine, additional_columns=None):
         # query = re.split(r'^\s*GO\s*$', query, flags=re.MULTILINE | re.IGNORECASE)
 
         if not query:
-            logger.warning("Query is empty after removing USE statement.")
+            logger.warning("Query is empty.")
             return pd.DataFrame()
 
         df = pd.read_sql_query(query, engine)
@@ -109,14 +101,13 @@ def process_sql_files(mapping_dir, engine, special_columns_map):
     return dataframes
 
 def map(options):
-    """Main function to process SQL files and save results to an Excel file."""
+    """Run mapping scripts and save results to an Excel file."""
     server = options.get("server") or os.getenv("SERVER")
     database = options.get("database") or os.getenv("TARGET_DB")
     input_dir = options.get('input')
 
-
     if not Confirm.ask(f"Run [bold blue]{input_dir}[/bold blue] -> [bold yellow]{server}.{database}[/bold yellow]"):
-        logger.info(f"Execution skipped for {input_dir}.")
+        logger.info(f"Execution cancelled.")
         return
 
     if not os.path.exists(input_dir):
@@ -159,28 +150,67 @@ def map(options):
     dataframes = process_sql_files(input_dir, engine, special_columns_map)
 
     # Save results to Excel
-    parent_dir_name = os.path.basename(os.path.abspath(os.getcwd()))
-    output_filename = f'{parent_dir_name} Data Mapping.xlsx'
+    output_filename = f"{os.path.basename(os.getcwd())} Data Mapping.xlsx"
     output_path = os.path.join(os.getcwd(), output_filename)
     save_to_excel(dataframes, output_path)
 
-    console.print(f"[green]Saved results to {output_path}[/green]")
     logger.info(f"Saved results to {output_path}")
+    console.print(f"[green]Saved results to {output_path}[/green]")
 
-if __name__ == "__main__":
-    """Command-line interface entry point."""
-    import argparse
-    parser = argparse.ArgumentParser(description="Process SQL files and save results to an Excel file.")
-    parser.add_argument("-s", "--server", required=True, help="SQL Server")
-    parser.add_argument("-d", "--database", required=True, help="Database")
-    parser.add_argument("-i", "--input", required=True, help="Path to the input folder containing SQL files.")
+# if __name__ == "__main__":
+#     """Command-line interface entry point."""
+#     import argparse
+#     parser = argparse.ArgumentParser(description="Process SQL files and save results to an Excel file.")
+#     parser.add_argument("-s", "--server", required=True, help="SQL Server")
+#     parser.add_argument("-d", "--database", required=True, help="Database")
+#     parser.add_argument("-i", "--input", required=True, help="Path to the input folder containing SQL files.")
     
+#     args = parser.parse_args()
+
+#     options = {
+#         'server': args.server,
+#         'database': args.database,
+#         'input': args.input
+#     }
+
+#     map(options)
+
+""" CLI Integration """
+def handle_map_command(args):
+    options = {
+        "server": args.server,
+        "database": args.database,
+        "input": args.input,
+    }
+    map(options)
+
+
+def add_map_parser(subparsers):
+    map_parser = subparsers.add_parser("map", help="Run mapping scripts and create Excel file.")
+    map_parser.add_argument("-s", "--server", help="SQL Server")
+    map_parser.add_argument("-d", "--database", help="Database")
+    map_parser.add_argument(
+        "-i",
+        "--input",
+        required=True,
+        help="Path to the input folder containing mapping scripts.",
+    )
+    map_parser.set_defaults(func=handle_map_command)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Process SQL files and execute them in order."
+    )
+    subparsers = parser.add_subparsers(help="Available commands")
+    add_map_parser(subparsers)
     args = parser.parse_args()
 
-    options = {
-        'server': args.server,
-        'database': args.database,
-        'input': args.input
-    }
+    if hasattr(args, "func"):
+        args.func(args)
+    else:
+        parser.print_help()
 
-    map(options)
+
+if __name__ == "__main__":
+    main()
