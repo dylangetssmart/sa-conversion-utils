@@ -1,5 +1,6 @@
 import psycopg
 import os
+import argparse
 from typing import List, Optional
 from rich.prompt import Confirm
 from rich.console import Console
@@ -60,3 +61,41 @@ def export_all_tables_to_csv(
                         continue
 
         console.print("[bright-green]All tables exported.[/bright-green]")
+
+def main():
+    """
+    Main function to parse command-line arguments and initiate the export.
+    """
+    parser = argparse.ArgumentParser(
+        description="Export PostgreSQL tables to CSV files."
+    )
+    parser.add_argument("--host", required=True, help="PostgreSQL host (e.g., localhost)")
+    parser.add_argument("--dbname", required=True, help="PostgreSQL database name")
+    parser.add_argument("--user", required=True, help="PostgreSQL username")
+    parser.add_argument("--password", required=True, help="PostgreSQL password")
+    parser.add_argument(
+        "--output-dir",
+        default="./exports",
+        help="Directory to save CSV files (default: ./exports)",
+    )
+    parser.add_argument(
+        "--tables",
+        nargs="*",  # 0 or more arguments
+        help="Space-separated list of specific table names to export. If omitted, all public tables are exported.",
+    )
+
+    args = parser.parse_args()
+
+    # Call the export function with parsed arguments
+    export_all_tables_to_csv(
+        host=args.host,
+        dbname=args.dbname,
+        user=args.user,
+        password=args.password,
+        output_dir=args.output_dir,
+        table_names=args.tables,
+    )
+
+
+if __name__ == "__main__":
+    main()
