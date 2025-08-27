@@ -25,7 +25,7 @@ Helper Functions
 """
 
 
-def find_backup_file(database, message, backup_dir="_backups"):
+def find_backup_file(database, message, backup_dir="workspace\\backups"):
     """
     Searches for backup file with the specified database name and optional message in the filename.
     """
@@ -63,7 +63,7 @@ def select_bak_backup_file():
     root = tk.Tk()
     root.withdraw()
     root.wm_attributes("-topmost", 1)
-    initial_dir = os.path.join(os.getcwd(), "_backups")
+    initial_dir = os.path.join(os.getcwd(), "workspace\\backups")
     backup_file = filedialog.askopenfile(
         title="Select the .bak backup_file to restore",
         filetypes=[("SQL Backup backup_files", "*.bak")],
@@ -83,7 +83,7 @@ def restore_db(config: dict):
     server = config.get("server")
     database = config.get("database")
     message = config.get("message")
-    backup_dir = config.get("backup_dir", "_backups")
+    backup_dir = config.get("backup_dir", "workspace\\backups")
     virgin = config.get("virgin", False)
 
     # Lazy load environment variables with defaults
@@ -220,7 +220,7 @@ def add_restore_parser(subparsers):
     )
     restore_parser.add_argument(
         "--backup-dir",
-        default="_backups",
+        default="workspace/backups",
         help="Directory where backup files are stored",
     )
     restore_parser.add_argument(

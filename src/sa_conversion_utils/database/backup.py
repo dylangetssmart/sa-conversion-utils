@@ -26,7 +26,7 @@ def add_backup_parser(subparsers):
     backup_parser.add_argument(
         "-o",
         "--output",
-        default=os.path.join(os.getcwd(), "_backups"),
+        default=os.path.join(os.getcwd(), "workspace\\backups"),
         help="Output path for the backup file.",
     )
     backup_parser.add_argument(

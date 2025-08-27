@@ -10,8 +10,6 @@ from sa_conversion_utils.config.user_config import load_user_config, REQUIRED_EN
 from rich.prompt import Confirm
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TaskProgressColumn
 from rich.console import Console
-from rich.progress import track
-
 
 from dotenv import load_dotenv
 

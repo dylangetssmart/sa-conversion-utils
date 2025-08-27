@@ -3,7 +3,7 @@ import logging
 import os
 
 def setup_logger(name=__name__, log_file=None, level=logging.DEBUG):
-    logs_dir = "_logs"
+    logs_dir = "workspace/logs"
     logger = logging.getLogger(name)
     logger.setLevel(level)
     logger.propagate = False
