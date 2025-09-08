@@ -5,9 +5,9 @@ import logging
 from .parse_notes_tasks_emails import parse_notes_tasks_emails
 
 # Logging and utility functions
-from ..utils.insert_sql import insert_to_sql_server
-from ..utils.insert_helpers import insert_entities
-from ..utils.load_yaml import load_yaml
+from ...utils.insert_sql import insert_to_sql_server
+from ...utils.insert_helpers import insert_entities
+from ...utils.load_yaml import load_yaml
 
 logger = logging.getLogger(__name__)
 

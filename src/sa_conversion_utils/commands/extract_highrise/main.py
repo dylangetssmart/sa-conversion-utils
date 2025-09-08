@@ -9,8 +9,8 @@ from .extract_contact import extract_contact
 from .extract_company import extract_company
 
 # Logging and utility functions
-from ..utils.create_engine import main as create_engine
-from ..logging.logger_config import logger_config
+from ...utils.create_engine import main as create_engine
+from ...logging.logger_config import logger_config
 
 # External libraries
 from rich.prompt import Confirm

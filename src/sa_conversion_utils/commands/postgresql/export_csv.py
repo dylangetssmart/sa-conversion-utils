@@ -116,7 +116,7 @@ def setup_parser(subparsers):
     Adds the 'export' subcommand to the 'postgresql' parser.
     """
     export_parser = subparsers.add_parser(
-        "export", help="Export PostgreSQL tables to .csv"
+        "export-csv", help="Export PostgreSQL tables to .csv"
     )
     export_parser.add_argument(
         "-s",
@@ -146,7 +146,7 @@ def setup_parser(subparsers):
         "-o",
         "--output-dir",
         default="./exports",
-        help="Directory to save CSV files. Defaults to ./exports"
+        help="Directory to save CSV files. (default: /exports)"
     )
     export_parser.add_argument(
         "-t",
