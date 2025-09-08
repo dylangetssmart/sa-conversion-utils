@@ -1,16 +1,18 @@
 import subprocess
 import os
 import time
+import logging
 
 BASE_DIR = os.getcwd()
+logger = logging.getLogger(__name__)
 
-def sql_runner(
+def run_sql_script(
         script_path: str,
         server: str,
         database: str,
         username=None,
         password=None,
-        logger=None,
+        # logger=None,
         progress=None,
         script_task=None,
     ):
@@ -80,23 +82,3 @@ def sql_runner(
     except Exception as e:
         logger.exception(f"Unexpected error while executing script: {script_name}")
         raise
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Run a SQL script using sql_runner.")
-    parser.add_argument("script_path", help="Path to the .sql script")
-    parser.add_argument("server", help="SQL Server name")
-    parser.add_argument("database", help="Database name")
-    parser.add_argument("-U", "--username", help="SQL username (optional)")
-    parser.add_argument("-P", "--password", help="SQL password (optional)")
-
-    args = parser.parse_args()
-
-    sql_runner(
-        script_path=args.script_path,
-        server=args.server,
-        database=args.database,
-        username=args.username,
-        password=args.password
-    )

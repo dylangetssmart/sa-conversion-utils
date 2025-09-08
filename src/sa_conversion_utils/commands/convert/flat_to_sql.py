@@ -22,7 +22,7 @@ from rich.table import Table
 # Absolute import for standalone context
 from sa_conversion_utils.utils.count_lines import count_lines_mmap
 from sa_conversion_utils.utils.detect_encoding import detect_encoding
-from sa_conversion_utils.database.backup import backup_db
+from sa_conversion_utils.commands.backup import backup_db
 from sa_conversion_utils.utils.create_engine import main as create_engine
 from sa_conversion_utils.utils.collect_files import collect_files
 from sa_conversion_utils.utils.detect_delimiter import detect_delimiter

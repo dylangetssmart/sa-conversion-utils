@@ -52,14 +52,3 @@ def main(
 	)
 
 	return engine
-
-if __name__ == "__main__":
-    # Example usage
-    engine = main(
-        server="your_server",
-        username="your_username",
-        password="your_password",
-        database="your_database",
-        windows_auth=False
-    )
-    print(engine)

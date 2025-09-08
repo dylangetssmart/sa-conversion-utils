@@ -1,5 +1,5 @@
 import os
-from sa_conversion_utils.run.read_yaml_metadata import read_yaml_metadata
+from .read_yaml_metadata import read_yaml_metadata
 from sa_conversion_utils.utils.logging.setup_logger import setup_logger
 
 logger = setup_logger(__name__, log_file="run.log")
