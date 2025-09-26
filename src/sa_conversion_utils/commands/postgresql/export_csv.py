@@ -15,6 +15,7 @@ def export_csv(args: argparse.Namespace):
     Connects to a PostgreSQL database and exports tables to CSV using COPY TO.
     """
     server = args.server
+    port = args.port
     database = args.database
     user = args.user
     password = args.password
@@ -23,7 +24,19 @@ def export_csv(args: argparse.Namespace):
     if_exists = args.if_exists
 
     os.makedirs(output_dir, exist_ok=True)
-    conn_str = f"host={server} dbname={database} user={user} password={password}"
+
+    conn_parts = [
+        f"host={server}",
+        f"port={port}",
+        f"dbname={database}",
+        f"user={user}"
+    ]
+
+    if args.password is not None:
+        conn_parts.append(f"password={args.password}")
+
+    conn_str = " ".join(conn_parts)
+    # conn_str = f"host={server} port={port} dbname={database} user={user} password={password}"
 
     # Separate tables to include and exclude
     tables_to_include = {t for t in table_names if not t.startswith('!')} if table_names else set()
@@ -125,6 +138,13 @@ def setup_parser(subparsers):
         help="PostgreSQL server hostname."
     )
     export_parser.add_argument(
+        "-p",
+        "--port",
+        type=int,
+        default=5432,
+        help="PostgreSQL post number (default: 5432)."
+    )
+    export_parser.add_argument(
         "-d",
         "--database",
         required=True,
@@ -139,7 +159,6 @@ def setup_parser(subparsers):
     export_parser.add_argument(
         "-P",
         "--password",
-        required=True,
         help="PostgreSQL password."
     )
     export_parser.add_argument(

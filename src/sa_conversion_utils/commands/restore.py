@@ -20,16 +20,16 @@ DEFUALT_SERVER = os.getenv("SERVER")
 DEFAULT_DB = os.getenv("TARGET_DB")
 
 # Find a directory named "backup" in the current working directory.
-# If not found, use a default path in "workspace/backups".
-backup_dir_in_cwd = os.path.join(os.getcwd(), "backup")
-DEFAULT_BACKUP_DIR = backup_dir_in_cwd if os.path.isdir(backup_dir_in_cwd) else os.path.join(os.getcwd(), "workspace\\backups")
+# If not found, use a default path in "backups".
+backup_dir_in_cwd = os.path.join(os.getcwd(), "backups")
+DEFAULT_BACKUP_DIR = backup_dir_in_cwd if os.path.isdir(backup_dir_in_cwd) else os.path.join(os.getcwd(), "backups")
 
 
 def select_bak_backup_file():
     root = tk.Tk()
     root.withdraw()
     root.wm_attributes("-topmost", 1)
-    initial_dir = os.path.join(os.getcwd(), "workspace\\backups")
+    initial_dir = os.path.join(os.getcwd(), "backups")
     backup_file = filedialog.askopenfile(
         title="Select the .bak backup_file to restore",
         filetypes=[("SQL Backup backup_files", "*.bak")],
@@ -165,7 +165,7 @@ def setup_parser(subparsers):
     )
     restore_parser.add_argument(
         "--backup-dir",
-        default="workspace/backups",
+        default="backups",
         help="Directory where backup files are stored",
     )
     restore_parser.set_defaults(func=restore)

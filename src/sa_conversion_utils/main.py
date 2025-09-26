@@ -9,6 +9,7 @@ from .commands.run.run import setup_parser as run_parser
 from .commands.extract_highrise.main import add_extract_highrise_parser
 from .commands.map import setup_parser as map_parser
 from .commands.encrypt import setup_parser as encrypt_parser
+from .commands.scan.scan import setup_parser as scan_parser
 from .commands.postgresql.export_csv import setup_parser as export_postgresql_csv_parser
 from .commands.sqlserver.import_csv import setup_parser as import_sqlserver_csv_parser
 from .logging.logger_config import logger_config
@@ -18,8 +19,11 @@ from rich.console import Console
 # from dotenv import load_dotenv
 
 console = Console()
-logger_config(rich_console=console)
-logger = logging.getLogger(__name__)
+# logger_config(rich_console=console)
+# logger = logging.getLogger(__name__)
+# Global logger config at the top-level
+script_name = os.path.splitext(os.path.basename(__file__))[0]
+# logger = logger_config(name=script_name, log_file=f"{script_name}.log", level=logging.INFO)
 
 # load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
 
@@ -27,7 +31,7 @@ def main():
     """
     Main CLI entry point
     """
-    logger.debug("Starting CLI application")
+    # logger.debug("Starting CLI application")
 
     # Setup CLI argument parser
     parser = argparse.ArgumentParser(description="SmartAdvocate Data Conversion Utilities.")
@@ -41,6 +45,7 @@ def main():
     run_parser(subparsers)
     encrypt_parser(subparsers)
     map_parser(subparsers)
+    scan_parser(subparsers)  # Add workflow scanning
 
     # PostgreSQL export command and its subcommands
     postgresql_parser = subparsers.add_parser('postgresql', help='PostgreSQL specific commands.')

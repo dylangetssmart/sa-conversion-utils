@@ -4,7 +4,7 @@ import time
 import logging
 
 BASE_DIR = os.getcwd()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("run")
 
 def run_sql_script(
         script_path: str,
@@ -12,9 +12,7 @@ def run_sql_script(
         database: str,
         username=None,
         password=None,
-        # logger=None,
         progress=None,
-        script_task=None,
     ):
     """
     Executes a SQL script using sqlcmd.
@@ -25,9 +23,6 @@ def run_sql_script(
         database (str): Database name.
         username (str, optional): SQL username.
         password (str, optional): SQL password.
-
-    Returns:
-        None
     """
     start_time = time.time()
     script_name = os.path.basename(script_path)
@@ -57,28 +52,25 @@ def run_sql_script(
 
         duration = time.time() - start_time
         output = result.stdout.strip() if result.stdout else "(No output)"
-        msg = f"PASS: {script_name} in {duration:.2f}s\n{output}"
 
-        # logger.info(f"PASS: {script_name}")
+        logger.info(f"PASS: {script_name}")
+        logger.debug(f"Script completed in {duration:.2f}s")    
         logger.debug(f"Script output: {output}")
 
-        if progress:
-            progress.console.print(f"[green]PASS: {script_name} ")
-            # progress.update(run_task, advance=1)
+        # if progress:
+        #     progress.console.print(f"[green]PASS: {script_name} ")
 
     except subprocess.CalledProcessError as e:
         duration = time.time() - start_time
         output = (e.stdout or '') + (e.stderr or '')
         output = output.strip() if output else str(e)
 
-        # logger.error(f"FAIL: {script_name}")
-        logger.debug(f"FAIL: {script_name} in {duration:.2f}s\n{output}")
+        logger.error(f"FAIL: {script_name}")
+        logger.debug(f"Script output/error: {output}")
 
-        if progress:
-            progress.console.print(f"[red]FAIL: {script_name} ")
-
-        # raise RuntimeError(f"ERROR: {script_name}") from e
+        # if progress:
+        #     progress.console.print(f"[red]FAIL: {script_name} ")
 
     except Exception as e:
-        logger.exception(f"Unexpected error while executing script: {script_name}")
+        logger.exception(f"Unexpected error in {script_name}")
         raise
