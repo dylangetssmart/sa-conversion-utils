@@ -1,7 +1,6 @@
 import os
 import argparse
 import logging
-import json
 from pathlib import Path
 from typing import List, Optional
 # Local

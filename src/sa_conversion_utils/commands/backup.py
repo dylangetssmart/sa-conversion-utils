@@ -83,4 +83,4 @@ def setup_parser(subparsers):
 	backup_parser.add_argument("-o", "--output", default=DEFAULT_OUTPUT, help="Output path for the backup file.",)
 	backup_parser.add_argument("-m", "--message", default="manual_backup", help="Message to include in the backup filename.")
 	backup_parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt.")
-	backup_parser.set_defaults(func=lambda args: backup(args.server, args.database, args.output, args.message, args.yes))
+	backup_parser.set_defaults(func=lambda args: backup(args.server, args.database, args.message, args.output, args.yes))
