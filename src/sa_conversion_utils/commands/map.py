@@ -1,17 +1,18 @@
-# External
 import os
 import argparse
 import pandas as pd
+import logging
+
 from rich.console import Console
 from rich.prompt import Confirm
 from dotenv import load_dotenv
-import logging
 
 from ..utils.create_engine import main as create_engine
 from ..utils.sanitize_utils import sanitize_dataframe
+from ..logging.logger_config import logger_config
 
 console = Console()
-logger = logging.getLogger(__name__)
+logger = logger_config(name=__name__, log_file="map.log", level=logging.DEBUG, rich_console=console)
 
 def execute_query(query, engine, additional_columns=None):
     """
