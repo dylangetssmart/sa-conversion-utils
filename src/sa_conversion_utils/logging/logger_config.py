@@ -50,7 +50,8 @@ def logger_config(name=__name__, log_file=None, level=logging.DEBUG, rich_consol
         )
         file_handler.setLevel(logging.DEBUG)
         file_formatter = logging.Formatter(
-            "%(name)s.%(funcName)s:%(lineno)s | %(levelname)s | %(asctime)s | %(message)s",
+            # "%(name)s.%(funcName)s:%(lineno)s | %(levelname)s | %(asctime)s | %(message)s",
+            "%(levelname)-8s | %(message)s",
             datefmt="%Y-%m-%d %I:%M%p"
         )
         file_handler.setFormatter(file_formatter)
