@@ -12,10 +12,12 @@ from .commands.encrypt import setup_parser as encrypt_parser
 from .commands.scan.scan import setup_parser as scan_parser
 from .commands.postgresql.export_csv import setup_parser as export_postgresql_csv_parser
 from .commands.sqlserver.import_csv import setup_parser as import_sqlserver_csv_parser
+from .commands.setup_project.main import setup_parser as setup_project_parser
 from .logging.logger_config import logger_config
 
 # External
 from rich.console import Console
+
 # from dotenv import load_dotenv
 
 console = Console()
@@ -27,6 +29,7 @@ script_name = os.path.splitext(os.path.basename(__file__))[0]
 
 # load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
 
+
 def main():
     """
     Main CLI entry point
@@ -34,7 +37,9 @@ def main():
     # logger.debug("Starting CLI application")
 
     # Setup CLI argument parser
-    parser = argparse.ArgumentParser(description="SmartAdvocate Data Conversion Utilities.")
+    parser = argparse.ArgumentParser(
+        description="SmartAdvocate Data Conversion Utilities."
+    )
     subparsers = parser.add_subparsers(title="operations", dest="subcommand")
     subparsers.required = True
 
@@ -45,23 +50,28 @@ def main():
     run_parser(subparsers)
     encrypt_parser(subparsers)
     map_parser(subparsers)
-    scan_parser(subparsers)  # Add workflow scanning
+    scan_parser(subparsers)
+
+    # Project setup commands
+    setup_project_parser(subparsers)
+
 
     # PostgreSQL export command and its subcommands
-    postgresql_parser = subparsers.add_parser('postgresql', help='PostgreSQL specific commands.')
+    postgresql_parser = subparsers.add_parser(
+        "postgresql", help="PostgreSQL specific commands."
+    )
     postgresql_subparsers = postgresql_parser.add_subparsers(
-        title="Supported exports",
-        dest="export_command",
-        required=True
+        title="Supported exports", dest="export_command", required=True
     )
     export_postgresql_csv_parser(postgresql_subparsers)
 
+
     # SQL Server import command and its subcommands
-    sqlserver_parser = subparsers.add_parser('sqlserver', help='SQL Server specific commands.')
+    sqlserver_parser = subparsers.add_parser(
+        "sqlserver", help="SQL Server specific commands."
+    )
     sqlserver_subparsers = sqlserver_parser.add_subparsers(
-        title="Supported imports",
-        dest="import_command",
-        required=True
+        title="Supported imports", dest="import_command", required=True
     )
     import_sqlserver_csv_parser(sqlserver_subparsers)
 
@@ -71,6 +81,7 @@ def main():
         args.func(args)
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
