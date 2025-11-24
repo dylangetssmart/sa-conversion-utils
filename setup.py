@@ -33,8 +33,8 @@ setup(
         "openpyxl",
         "chardet",
         "pyyaml",
-        "psycopg"
-        # "tkinter"
+        "psycopg",
+        "psycopg2-binary"
     ],
     extras_require={
         "dev": ["pytest>=7.0", "twine>=4.0.2"],

@@ -12,8 +12,8 @@ from .commands.encrypt import setup_parser as encrypt_parser
 from .commands.scan.scan import setup_parser as scan_parser
 from .commands.postgresql.export_csv import setup_parser as export_postgresql_csv_parser
 from .commands.sqlserver.import_csv import setup_parser as import_sqlserver_csv_parser
-from .commands.setup_project.main import setup_parser as setup_project_parser
-from .logging.logger_config import logger_config
+# from .commands.setup_project.main import setup_parser as setup_project_parser
+# from .logging.logger_config import logger_config
 
 # External
 from rich.console import Console
@@ -24,7 +24,7 @@ console = Console()
 # logger_config(rich_console=console)
 # logger = logging.getLogger(__name__)
 # Global logger config at the top-level
-script_name = os.path.splitext(os.path.basename(__file__))[0]
+# script_name = os.path.splitext(os.path.basename(__file__))[0]
 # logger = logger_config(name=script_name, log_file=f"{script_name}.log", level=logging.INFO)
 
 # load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))  # Load environment variables from .env file
@@ -34,9 +34,6 @@ def main():
     """
     Main CLI entry point
     """
-    # logger.debug("Starting CLI application")
-
-    # Setup CLI argument parser
     parser = argparse.ArgumentParser(
         description="SmartAdvocate Data Conversion Utilities."
     )
@@ -46,15 +43,12 @@ def main():
     # General Commands
     backup_parser(subparsers)
     restore_parser(subparsers)
-    add_extract_highrise_parser(subparsers)
-    run_parser(subparsers)
     encrypt_parser(subparsers)
-    map_parser(subparsers)
-    scan_parser(subparsers)
-
-    # Project setup commands
-    setup_project_parser(subparsers)
-
+    run_parser(subparsers)
+    # add_extract_highrise_parser(subparsers)
+    # map_parser(subparsers)
+    # scan_parser(subparsers)
+    # setup_project_parser(subparsers)
 
     # PostgreSQL export command and its subcommands
     postgresql_parser = subparsers.add_parser(
@@ -65,7 +59,6 @@ def main():
     )
     export_postgresql_csv_parser(postgresql_subparsers)
 
-
     # SQL Server import command and its subcommands
     sqlserver_parser = subparsers.add_parser(
         "sqlserver", help="SQL Server specific commands."
@@ -74,6 +67,7 @@ def main():
         title="Supported imports", dest="import_command", required=True
     )
     import_sqlserver_csv_parser(sqlserver_subparsers)
+
 
     args = parser.parse_args()
 

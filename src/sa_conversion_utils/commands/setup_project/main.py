@@ -6,7 +6,7 @@ import argparse
 import sys
 
 from .get_legacy_systems import get_legacy_systems
-from .copy_shared_scripts import copy_shared_scripts
+from .copy_sql_scripts import copy_shared_scripts
 from .update_database_references import update_database_references
 from .update_env_vars import update_env_vars
 
@@ -62,7 +62,7 @@ def setup_project(args): # Function now accepts 'args' from argparse
 
     # --- Step 2: Copy shared scripts ---
     if Confirm.ask(f"\n[bold]2. Copy shared scripts[/bold] into '{legacy_system}'?"):
-        copy_shared_scripts(legacy_system)
+        copy_shared_scripts(SCRIPTS_DIR, legacy_system)
 
     # --- Step 3: Update database references ---
     if Confirm.ask(f"\n[bold]3. Update database references[/bold] in '{legacy_system}' scripts?"):

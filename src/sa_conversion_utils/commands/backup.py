@@ -3,6 +3,7 @@ import re
 import subprocess
 import argparse
 import logging
+import zipfile
 
 from sa_conversion_utils.utils.validate_dir import validate_dir
 from datetime import datetime
@@ -22,13 +23,40 @@ DEFAULT_DB = os.getenv("TARGET_DB")
 backup_dir_in_cwd = os.path.join(os.getcwd(), "backups")
 DEFAULT_OUTPUT = backup_dir_in_cwd if os.path.isdir(backup_dir_in_cwd) else os.path.join(os.getcwd(), "backups")
 
+def setup_parser(subparsers):
+	"""Add 'backup' subcommand to CLI parser."""
+	backup_parser = subparsers.add_parser("backup", help="Backup SQL Server database.")
+	backup_parser.add_argument("-s", "--server", default=DEFUALT_SERVER, help="SQL Server")
+	backup_parser.add_argument("-d", "--database", default=DEFAULT_DB, help="Database")
+	backup_parser.add_argument("-o", "--output", default=DEFAULT_OUTPUT, help="Output path for the backup file.",)
+	backup_parser.add_argument("-m", "--message", default="manual_backup", help="Message to include in the backup filename.")
+	backup_parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt.")
+	backup_parser.add_argument("-z", "--zip", action="store_true", help="Zip the backup after creation")
+	backup_parser.set_defaults(func=lambda args: backup(args.server, args.database, args.message, args.output, args.yes))
+
+
+def zip_backup_file(bak_path: str) -> str:
+    """Zip the .bak file and return path to the .zip"""
+    zip_path = bak_path + ".zip"
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(bak_path, os.path.basename(bak_path))
+        console.print(f"[green]Zipped backup: {zip_path}")
+        logger.info(f"Zipped backup: {zip_path}")
+        return zip_path
+    except Exception as e:
+        console.print(f"[red]Error zipping backup: {e}")
+        logger.error(f"Error zipping backup: {e}")
+        raise
+
 
 def backup(
 		server: str,
 		database: str,
 		message: str = None,
 		output: str = DEFAULT_OUTPUT,
-		skip_confirm: bool = False
+		skip_confirm: bool = False,
+		zip_output: bool = False
     ):
 
     if not server:
@@ -68,19 +96,14 @@ def backup(
         try:
             with console.status("Backing up database..."):
                 subprocess.run(backup_command, check=True, shell=True)
+                
             console.print(f"[green]Backup complete: {backup_path}.")
             logger.info(f"Backup complete: {backup_path}.")
         except subprocess.CalledProcessError as error:
             console.print(f"[red]Error backing up database {database}: {error}")
             logger.error(f"Error backing up database {database}: {error}")
-
-
-def setup_parser(subparsers):
-	"""Add 'backup' subcommand to CLI parser."""
-	backup_parser = subparsers.add_parser("backup", help="Backup SQL Server database.")
-	backup_parser.add_argument("-s", "--server", default=DEFUALT_SERVER, help="SQL Server")
-	backup_parser.add_argument("-d", "--database", default=DEFAULT_DB, help="Database")
-	backup_parser.add_argument("-o", "--output", default=DEFAULT_OUTPUT, help="Output path for the backup file.",)
-	backup_parser.add_argument("-m", "--message", default="manual_backup", help="Message to include in the backup filename.")
-	backup_parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompt.")
-	backup_parser.set_defaults(func=lambda args: backup(args.server, args.database, args.message, args.output, args.yes))
+            return
+        
+        # If --zip was provided, zip the backup file
+        if zip_output:
+            zip_backup_file(backup_path)
