@@ -83,6 +83,18 @@ def setup_parser(subparsers):
         metavar="", 
         help="Database to execute SQL scripts against."
     )
+    group_target.add_argument(
+        "-u", 
+        "--username", 
+        metavar="", 
+        help="SQL username."
+    )
+    group_target.add_argument(
+        "-p", 
+        "--password", 
+        metavar="", 
+        help="SQL password."
+    )
     
     run_parser.set_defaults(func=run)
     
@@ -335,6 +347,8 @@ def run(args: argparse.Namespace):
                 script_path=str(script_path), 
                 server=server,
                 database=database,
+                username=args.username,
+                password=args.password,
                 progress=progress,
             )
             progress.advance(overall_task)
