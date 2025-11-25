@@ -34,6 +34,7 @@ setup(
         "chardet",
         "pyyaml",
         "psycopg",
+        "psycopg-binary",
         "psycopg2-binary"
     ],
     extras_require={
