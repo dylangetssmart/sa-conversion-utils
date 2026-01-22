@@ -35,7 +35,8 @@ setup(
         "pyyaml",
         "psycopg",
         "psycopg-binary",
-        "psycopg2-binary"
+        "psycopg2-binary",
+        "questionary"
     ],
     extras_require={
         "dev": ["pytest>=7.0", "twine>=4.0.2"],

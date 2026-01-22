@@ -139,7 +139,7 @@ def collect_scripts_from_runlist(runlist_path: Path, group_name: Optional[str]) 
                 
                 if not script_path.is_file() or not script_path.name.lower().endswith(".sql"):
                     logger.error(f"Runlist line {i}: '{line}' in group '{group_name}' is not a valid SQL script path. Skipping.")
-                    console.print(f"Runlist line {i}: '{line}' is not a valid SQL script path. Skipping.")
+                    console.print(f"[yellow]Runlist line {i}: '{line}' is not a valid SQL script path. Skipping.[yellow]")
                     continue
                     
                 scripts.append(script_path.resolve())
@@ -157,7 +157,7 @@ def collect_scripts_from_runlist(runlist_path: Path, group_name: Optional[str]) 
             
             if not script_path.is_file() or not script_path.name.lower().endswith(".sql"):
                 logger.error(f"Runlist line {i}: '{line}' is not a valid SQL script path. Skipping.")
-                console.print(f"Runlist line {i}: '{line}' is not a valid SQL script path. Skipping.")
+                console.print(f"[yellow]Runlist line {i}: '{line}' is not a valid SQL script path. Skipping.[/yellow]")
                 continue
                 
             scripts.append(script_path.resolve())

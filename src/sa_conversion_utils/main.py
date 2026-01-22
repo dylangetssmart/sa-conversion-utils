@@ -12,7 +12,7 @@ from .commands.encrypt import setup_parser as encrypt_parser
 from .commands.scan.scan import setup_parser as scan_parser
 from .commands.postgresql.export_csv import setup_parser as export_postgresql_csv_parser
 from .commands.sqlserver.import_csv import setup_parser as import_sqlserver_csv_parser
-# from .commands.setup_project.main import setup_parser as setup_project_parser
+from .commands.setup_project.main import setup_init_command as setup_project_parser
 # from .logging.logger_config import logger_config
 
 # External
@@ -48,7 +48,7 @@ def main():
     # add_extract_highrise_parser(subparsers)
     # map_parser(subparsers)
     # scan_parser(subparsers)
-    # setup_project_parser(subparsers)
+    setup_project_parser(subparsers)
 
     # PostgreSQL export command and its subcommands
     postgresql_parser = subparsers.add_parser(

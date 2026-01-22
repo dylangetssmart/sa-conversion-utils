@@ -48,6 +48,7 @@ def run_sql_script(
             capture_output=True,
             text=True,
             encoding='utf-8',
+            errors='replace',
             check=True
         )
 
@@ -62,11 +63,22 @@ def run_sql_script(
         #     progress.console.print(f"[green]PASS: {script_name} ")
 
     except subprocess.CalledProcessError as e:
-        output = (e.stdout or '') + (e.stderr or '')
-        output = output.strip() if output else str(e)
+        # output = (e.stdout or '') + (e.stderr or '')
+        # output = output.strip() if output else str(e)
+        raw_output = (e.stdout or '') + (e.stderr or '')
+        lines = [line for line in raw_output.strip().split('\n') if line.strip()]
+        LIMIT = 10 
+        
+        if len(lines) > LIMIT:
+            # Keep first 4 and last 4 lines, with an ellipsis in the middle
+            truncated_output = lines[:4] + ["... [output truncated] ..."] + lines[-4:]
+            output = "\n".join(truncated_output)
+        else:
+            output = "\n".join(lines) if lines else str(e)
 
-        logger.error(f"FAIL: {script_name}")
-        logger.debug(f"{output} \n")
+        logger.error(f"FAIL: {script_name} \n {output} \n" )
+        # logger.debug(f"{output} \n")
+        # logger.info(f"{output} \n")
 
         # if progress:
         #     progress.console.print(f"[red]FAIL: {script_name} ")
